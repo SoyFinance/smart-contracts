@@ -307,11 +307,11 @@ contract Ownable is Context {
    *
    * NOTE: Renouncing ownership will leave the contract without an owner,
    * thereby removing any functionality that is only available to the owner.
-   */
   function renounceOwnership() public onlyOwner {
     emit OwnershipTransferred(_owner, address(0));
     _owner = address(0);
   }
+   */
 
   /**
    * @dev Transfers ownership of the contract to a new account (`newOwner`).
@@ -371,7 +371,11 @@ contract ERC20Token is Context, IERC20, Ownable {
     return true;
   }
 
-  
+  // allows the owner to rescue tokens that were transferred to this contract address by mistake
+  function rescueERC20(address _token, uint256 _amount) external onlyOwner {
+    IERC20(_token).transfer(owner(), _amount);
+  }
+
   /**
    * @dev Returns the token decimals.
    */
