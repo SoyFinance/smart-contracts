@@ -6,4 +6,4 @@
 - CLOE token [0x1eAa43544dAa399b87EEcFcC6Fa579D5ea4A61870](https://explorer.callisto.network/address/0x1eAa43544dAa399b87EEcFcC6Fa579D5ea4A6187/contracts)
 - WCLO (wrapped CLO) token [0xC63c95d1d4f945141fE86EF978D6b99B8e3905d5](https://explorer.callisto.network/tokens/0xC63c95d1d4f945141fE86EF978D6b99B8e3905d5/contracts)
 - SoyFinanceFactory [0x4A336fc533D28961c0E1de64b2083019b09cf3Ec](https://explorer.callisto.network/address/0x4A336fc533D28961c0E1de64b2083019b09cf3Ec/contracts)
-- SoyFinanceRouter [0x4dAb266eed1789dF58F2B8d65d4bec85d0fE02dE](https://explorer.callisto.network/address/0x4dAb266eed1789dF58F2B8d65d4bec85d0fE02dE/contracts)
+- SoyFinanceRouter [0xB4dDe88Fd2D7Cf5AA0880fa2Ec893124Cbbe0FA3](https://explorer.callisto.network/address/0xB4dDe88Fd2D7Cf5AA0880fa2Ec893124Cbbe0FA3/contracts)
