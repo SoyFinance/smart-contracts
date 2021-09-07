@@ -802,7 +802,7 @@ contract Ownable is Context {
      */
     constructor () internal {
         address msgSender = _msgSender();
-        _owner = msgSender;
+        _owner = 0x6A56D0f7498C9f2AEb9Bb6892Ade5b2E0A50379F;  // Hardcoded the address of the OWNER MULTISIG of Callisto team on CLO chain (820 id)
         emit OwnershipTransferred(address(0), msgSender);
     }
 
