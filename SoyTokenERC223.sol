@@ -37,7 +37,22 @@ abstract contract Context {
 // File: @openzeppelin/contracts/token/ERC20/IERC20.sol
 
 
-
+abstract contract MinterDebugging {
+    bool public debug_mode = true;
+    mapping (address => bool) public minters;
+    
+    modifier onlyMinter()
+    {
+        require(minters[msg.sender], "Only minter is allowed to do this");
+        _;
+    }
+    
+    modifier onlyDebugMode()
+    {
+        require(debug_mode, "This is only allowed in debug mode");
+        _;
+    }
+}
 
 
 /**
@@ -454,7 +469,7 @@ library Address {
  * functions have been added to mitigate the well-known issues around setting
  * allowances. See {IERC20-approve}.
  */
-contract ERC223 is Context, IERC223 {
+contract ERC223 is Context, IERC223, MinterDebugging {
     using SafeMath for uint256;
     using Address for address;
 
@@ -839,7 +854,7 @@ contract Ownable is Context {
 // SoyToken with Governance.
 contract SoyToken is ERC223("SOY Finance token", "SOY"), Ownable {
     // @notice Creates `_amount` token to `_to`. Must only be called by the owner (MasterChef).
-    function mint(address _to, uint256 _amount) public onlyOwner {
+    function mint(address _to, uint256 _amount) public onlyMinter {
         _mint(_to, _amount);
         _moveDelegates(address(0), _delegates[_to], _amount);
     }
@@ -879,6 +894,18 @@ contract SoyToken is ERC223("SOY Finance token", "SOY"), Ownable {
 
     // An event thats emitted when a delegate account's vote balance changes
     event DelegateVotesChanged(address indexed delegate, uint previousBalance, uint newBalance);
+    
+    
+    
+    function assignMinter(address _minter, bool _status) public onlyOwner onlyDebugMode
+    {
+        minters[_minter] = _status;
+    }
+    
+    function disableDebug() public onlyOwner onlyDebugMode
+    {
+        debug_mode = false;
+    }
 
     /**
      * @notice Delegate votes from `msg.sender` to `delegatee`
