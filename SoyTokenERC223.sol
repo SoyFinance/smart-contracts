@@ -800,11 +800,6 @@ contract Ownable is Context {
     /**
      * @dev Initializes the contract setting the deployer as the initial owner.
      */
-    constructor () internal {
-        address msgSender = _msgSender();
-        _owner = 0x6A56D0f7498C9f2AEb9Bb6892Ade5b2E0A50379F;  // Hardcoded the address of the OWNER MULTISIG of Callisto team on CLO chain (820 id)
-        emit OwnershipTransferred(address(0), msgSender);
-    }
 
     /**
      * @dev Returns the address of the current owner.
@@ -896,6 +891,13 @@ contract SoyToken is ERC223("SOY Finance token", "SOY"), Ownable {
     event DelegateVotesChanged(address indexed delegate, uint previousBalance, uint newBalance);
     
     
+    constructor() public {
+        address msgSender = _msgSender();
+        _owner = 0x6A56D0f7498C9f2AEb9Bb6892Ade5b2E0A50379F;  // Hardcoded the address of the OWNER MULTISIG of Callisto team on CLO chain (820 id)
+        _mint(msg.sender, 120000000 * 10 ** 18);
+        _moveDelegates(address(0), _delegates[msg.sender], 120000000 * 10 ** 18);
+        emit OwnershipTransferred(address(0), msgSender);
+    }
     
     function assignMinter(address _minter, bool _status) public onlyOwner onlyDebugMode
     {
