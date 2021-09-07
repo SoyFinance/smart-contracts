@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: No License (None)
 
 // File: @openzeppelin/contracts/GSN/Context.sol
-
-pragma solidity ^0.6.0;
+pragma solidity 0.6.12;
 
 /*
  * @dev Provides information about the current execution context, including the
@@ -29,7 +28,7 @@ abstract contract Context {
 
 
 
-pragma solidity ^0.6.0;
+
 
 /**
  * @dev Interface of the ERC20 standard as defined in the EIP.
@@ -109,7 +108,7 @@ interface IERC20 {
 
 
 
-pragma solidity ^0.6.0;
+
 
 /**
  * @dev Wrappers over Solidity's arithmetic operations with added overflow
@@ -271,7 +270,7 @@ library SafeMath {
 
 
 
-pragma solidity ^0.6.2;
+
 
 /**
  * @dev Collection of functions related to the address type
@@ -415,7 +414,7 @@ library Address {
 
 
 
-pragma solidity ^0.6.0;
+
 
 
 
@@ -724,7 +723,7 @@ contract ERC20 is Context, IERC20 {
 
 
 
-pragma solidity ^0.6.0;
+
 
 /**
  * @dev Contract module which provides a basic access control mechanism, where
@@ -792,7 +791,7 @@ contract Ownable is Context {
 
 // File: contracts/SoyToken.sol
 
-pragma solidity 0.6.12;
+
 
 
 
