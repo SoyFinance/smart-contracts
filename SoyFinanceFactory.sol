@@ -2,7 +2,7 @@
 
 // File contracts/interfaces/ISoyFinanceFactory.sol
 
-pragma solidity >=0.5.0;
+pragma solidity >=0.5.6;
 
 interface ISoyFinanceFactory {
     event PairCreated(address indexed token0, address indexed token1, address pair, uint);
@@ -19,11 +19,6 @@ interface ISoyFinanceFactory {
     function setFeeTo(address) external;
     function setFeeToSetter(address) external;
 }
-
-
-// File contracts/interfaces/ISoyFinancePair.sol
-
-pragma solidity >=0.5.0;
 
 interface ISoyFinancePair {
     event Approval(address indexed owner, address indexed spender, uint value);
@@ -76,11 +71,6 @@ interface ISoyFinancePair {
     function initialize(address, address) external;
 }
 
-
-// File contracts/interfaces/ISoyFinanceERC20.sol
-
-pragma solidity >=0.5.0;
-
 interface ISoyFinanceERC20 {
     event Approval(address indexed owner, address indexed spender, uint value);
     event Transfer(address indexed from, address indexed to, uint value);
@@ -102,12 +92,6 @@ interface ISoyFinanceERC20 {
 
     function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external;
 }
-
-
-// File contracts/libraries/SafeMath.sol
-
-pragma solidity =0.5.16;
-
 // a library for performing overflow-safe math, courtesy of DappHub (https://github.com/dapphub/ds-math)
 
 library SafeMath {
@@ -123,12 +107,6 @@ library SafeMath {
         require(y == 0 || (z = x * y) / y == x, 'ds-math-mul-overflow');
     }
 }
-
-
-// File contracts/SoyFinanceERC20.sol
-
-pragma solidity =0.5.16;
-
 
 contract  SoyFinanceERC20 is ISoyFinanceERC20 {
     using SafeMath for uint;
@@ -151,7 +129,7 @@ contract  SoyFinanceERC20 is ISoyFinanceERC20 {
     constructor() public {
         uint chainId;
         assembly {
-            chainId := chainid
+            chainId := chainid()
         }
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
@@ -220,11 +198,6 @@ contract  SoyFinanceERC20 is ISoyFinanceERC20 {
     }
 }
 
-
-// File contracts/libraries/Math.sol
-
-pragma solidity =0.5.16;
-
 // a library for performing various math operations
 
 library Math {
@@ -246,12 +219,6 @@ library Math {
         }
     }
 }
-
-
-// File contracts/libraries/UQ112x112.sol
-
-pragma solidity =0.5.16;
-
 // a library for handling binary fixed point numbers (https://en.wikipedia.org/wiki/Q_(number_format))
 
 // range: [0, 2**112 - 1]
@@ -271,11 +238,6 @@ library UQ112x112 {
     }
 }
 
-
-// File contracts/interfaces/IERC20.sol
-
-pragma solidity >=0.5.0;
-
 interface IERC20 {
     event Approval(address indexed owner, address indexed spender, uint value);
     event Transfer(address indexed from, address indexed to, uint value);
@@ -292,25 +254,9 @@ interface IERC20 {
     function transferFrom(address from, address to, uint value) external returns (bool);
 }
 
-
-// File contracts/interfaces/ISoyFinanceCallee.sol
-
-pragma solidity >=0.5.0;
-
 interface ISoyFinanceCallee {
     function soyFinanceCall(address sender, uint amount0, uint amount1, bytes calldata data) external;
 }
-
-
-// File contracts/SoyFinancePair.sol
-
-pragma solidity =0.5.16;
-
-
-
-
-
-
 
 contract SoyFinancePair is ISoyFinancePair, SoyFinanceERC20 {
     using SafeMath  for uint;
@@ -503,11 +449,6 @@ contract SoyFinancePair is ISoyFinancePair, SoyFinanceERC20 {
         _update(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)), reserve0, reserve1);
     }
 }
-
-
-// File contracts/SoyFinanceFactory.sol
-
-pragma solidity =0.5.16;
 
 
 contract SoyFinanceFactory is ISoyFinanceFactory {
