@@ -71,7 +71,6 @@ abstract contract IERC223Recipient {
         uint256 value;
         bytes   data;
     }
-    
     ERC223TransferInfo private tkn;
     
 /**
@@ -146,23 +145,15 @@ contract ReentrancyGuard {
 interface IStakingRewards {
     // Views
     function lastTimeRewardApplicable() external view returns (uint256);
-
     function rewardPerToken() external view returns (uint256);
-
     function earned(address account) external view returns (uint256);
-
     function getRewardForDuration() external view returns (uint256);
-
     function totalSupply() external view returns (uint256);
-
     function balanceOf(address account) external view returns (uint256);
 
     // Mutative
-
     function withdraw(uint256 amount) external;
-
     function getReward() external;
-
     function exit() external;
 }
 
@@ -187,8 +178,8 @@ contract StakingRewards is IERC223Recipient, IStakingRewards, RewardsDistributio
 
     IERC223 public rewardsToken;
     IERC223 public stakingToken;
-    uint256 public periodFinish = 0;
-    uint256 public rewardRate = 0;
+    uint256 public periodFinish    = 0;
+    uint256 public rewardRate      = 0;
     uint256 public rewardsDuration = 1 days;
     uint256 public lastUpdateTime;
     uint256 public rewardPerTokenStored;
@@ -196,7 +187,7 @@ contract StakingRewards is IERC223Recipient, IStakingRewards, RewardsDistributio
     mapping(address => uint256) public userRewardPerTokenPaid;
     mapping(address => uint256) public rewards;
 
-    uint256 private _totalSupply;
+    uint256                     private _totalSupply;
     mapping(address => uint256) private _balances;
 
     /* ========== CONSTRUCTOR ========== */
@@ -207,8 +198,8 @@ contract StakingRewards is IERC223Recipient, IStakingRewards, RewardsDistributio
         address _stakingToken
     )
     {
-        rewardsToken = IERC223(_rewardsToken);
-        stakingToken = IERC223(_stakingToken);
+        rewardsToken        = IERC223(_rewardsToken);
+        stakingToken        = IERC223(_stakingToken);
         rewardsDistribution = _rewardsDistribution;
     }
     
@@ -221,8 +212,9 @@ contract StakingRewards is IERC223Recipient, IStakingRewards, RewardsDistributio
         require(msg.sender == address(stakingToken), "Wrong token deposit reverted");
         require(_amount > 0, "Cannot stake 0");
         
-        _totalSupply = _totalSupply + _amount;
+        _totalSupply     += _amount;
         _balances[_from] += _amount;
+        
         emit Staked(_from, _amount);
     }
     
@@ -285,9 +277,12 @@ contract StakingRewards is IERC223Recipient, IStakingRewards, RewardsDistributio
 
     function withdraw(uint256 amount) public override nonReentrant updateReward(msg.sender) {
         require(amount > 0, "Cannot withdraw 0");
-        _totalSupply = _totalSupply - amount;
-        _balances[msg.sender] = _balances[msg.sender] - amount;
+        
+        _totalSupply          -= amount;
+        _balances[msg.sender] -= amount;
+        
         stakingToken.transfer(msg.sender, amount);
+        
         emit Withdrawn(msg.sender, amount);
     }
 
@@ -296,6 +291,7 @@ contract StakingRewards is IERC223Recipient, IStakingRewards, RewardsDistributio
         if (reward > 0) {
             rewards[msg.sender] = 0;
             rewardsToken.transfer(msg.sender, reward);
+            
             emit RewardPaid(msg.sender, reward);
         }
     }
@@ -314,8 +310,8 @@ contract StakingRewards is IERC223Recipient, IStakingRewards, RewardsDistributio
         } else 
         {
             uint256 remaining = periodFinish - block.timestamp;
-            uint256 leftover = remaining * rewardRate;
-            rewardRate = reward + leftover / rewardsDuration;
+            uint256 leftover  = remaining * rewardRate;
+            rewardRate        = reward + leftover / rewardsDuration;
         }
 
         // Ensure the provided reward amount is not more than the balance in the contract.
@@ -349,9 +345,9 @@ contract StakingRewards is IERC223Recipient, IStakingRewards, RewardsDistributio
                 IGlobalFarm(rewardsDistribution).mintFarmingReward(address(this), rewardsDuration);
                 // User received reward up to start new period.
                 // Add reward for user from start of new period
-                rewardPerTokenStored = rewardPerToken();
-                lastUpdateTime = lastTimeRewardApplicable();
-                rewards[account] = earned(account);
+                rewardPerTokenStored            = rewardPerToken();
+                lastUpdateTime                  = lastTimeRewardApplicable();
+                rewards[account]                = earned(account);
                 userRewardPerTokenPaid[account] = rewardPerTokenStored;
             }
         }
