@@ -328,7 +328,7 @@ contract StakingRewards is IERC223Recipient, IStakingRewards, RewardsDistributio
             if (startNewPeriod >= periodFinish)
                 lastUpdateTime = startNewPeriod;
         }
-        periodFinish = (block.timestamp / rewardsDuration) + rewardsDuration;    // set periodFinish at 00:00 UTC
+        periodFinish = (block.timestamp / rewardsDuration) * rewardsDuration;    // set periodFinish at 00:00 UTC
         emit RewardAdded(reward);
     }
 
