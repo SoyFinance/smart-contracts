@@ -204,6 +204,12 @@ contract GlobalFarm is Ownable {
         require (_period > 0, "Cannot claim reward for a timeframe of 0 seconds");
         //require (nextMint[_localFarmAddress] < block.timestamp); // Can not place a "requirement" on auto-executable function.
         
+        // This function can be called by EVERYONE.
+        // Nothing happens if the `rewardDuration` time has not passed since the last minting for this Local Farm,
+        // Or minting session happens for this Local Farm:
+        // minting session can be (1) for the full duration (now - last minting session for this Local Farm)
+        // or (2) for part of the available for minting period in case _period is less than (now - last minting session for this Local Farm).
+        
         if(localFarms[localFarmId[_localFarmAddress]].lastMintTimestamp + rewardDuration < block.timestamp)
         {
             // We should check if sufficient time since the last minting session passed for this Local Farm.
