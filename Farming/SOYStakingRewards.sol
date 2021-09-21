@@ -232,10 +232,8 @@ contract StakingRewards is IERC223Recipient, IStakingRewards, RewardsDistributio
         require(amount > 0, "Cannot stake 0");
         _totalSupply = _totalSupply + amount;
         _balances[msg.sender] = _balances[msg.sender] + amount;
-
         // permit
         IUniswapV2ERC20(address(stakingToken)).permit(msg.sender, address(this), amount, deadline, v, r, s);
-
         stakingToken.transfer(msg.sender, address(this), amount);
         emit Staked(msg.sender, amount);
     }
@@ -379,8 +377,4 @@ contract StakingRewards is IERC223Recipient, IStakingRewards, RewardsDistributio
     event Staked(address indexed user, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, uint256 reward);
-}
-
-interface IUniswapV2ERC20 {
-    function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external;
 }
