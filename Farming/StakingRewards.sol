@@ -2,7 +2,7 @@
  *Submitted for verification at Etherscan.io on 2020-09-16
 */
 
-pragma solidity ^0.5.16;
+pragma solidity 0.8.0;
 
 /**
  * @dev Standard math utilities missing in the Solidity language.
@@ -370,10 +370,10 @@ interface IGlobalFarm {
     function mintFarming(address localFarm, uint256 period) external;
 }
 
-contract RewardsDistributionRecipient {
+abstract contract RewardsDistributionRecipient {
     address public rewardsDistribution;
 
-    function notifyRewardAmount(uint256 reward) external;
+    function notifyRewardAmount(uint256 reward) external virtual;
 
     modifier onlyRewardsDistribution() {
         require(msg.sender == rewardsDistribution, "Caller is not RewardsDistribution contract");
@@ -407,7 +407,8 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
         address _rewardsDistribution,   // GlobalFarm contract
         address _rewardsToken,          // SOY token
         address _stakingToken
-    ) public {
+    )
+    {
         rewardsToken = IERC20(_rewardsToken);
         stakingToken = IERC20(_stakingToken);
         rewardsDistribution = _rewardsDistribution;
