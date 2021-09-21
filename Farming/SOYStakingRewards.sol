@@ -319,7 +319,7 @@ contract StakingRewards is IERC223Recipient, IStakingRewards, RewardsDistributio
         // very high values of rewardRate in the earned and rewardsPerToken functions;
         // Reward + leftover must be less than 2^256 / 10^18 to avoid overflow.
         uint balance = rewardsToken.balanceOf(address(this));
-        require(rewardRate <= balance / rewardsDuration, "Provided reward too high");
+        require(rewardRate <= balance / rewardsDuration, "Provided reward is too high");
 
         if (lastUpdateTime == 0) {
             lastUpdateTime = block.timestamp;  // for first time
