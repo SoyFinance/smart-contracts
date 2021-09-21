@@ -163,7 +163,7 @@ contract GlobalFarm is Ownable {
         emit ChangeTokenPerYear(oldAmount, newAmount);
     }
 
-    function mintFarming(address _localFarm, uint256 _period) external {
+    function mintFarmingReward(address _localFarm, uint256 _period) external {
         uint256 valueIndex = localFarmId[_localFarm];
         require (valueIndex != 0, "LocalFarm not exist");
         require (nextMint[_localFarm] < block.timestamp);
