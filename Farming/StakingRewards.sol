@@ -32,78 +32,79 @@ library Math {
     }
 }
 
+abstract contract IERC223 {
+    
+    function name()        public view virtual returns (string memory);
+    function symbol()      public view virtual returns (string memory);
+    function decimals()    public view virtual returns (uint8);
+    function totalSupply() public view virtual returns (uint256);
+    
+    /**
+     * @dev Returns the balance of the `who` address.
+     */
+    function balanceOf(address who) public virtual view returns (uint);
+        
+    /**
+     * @dev Transfers `value` tokens from `msg.sender` to `to` address
+     * and returns `true` on success.
+     */
+    function transfer(address to, uint value) public virtual returns (bool success);
+        
+    /**
+     * @dev Transfers `value` tokens from `msg.sender` to `to` address with `data` parameter
+     * and returns `true` on success.
+     */
+    function transfer(address to, uint value, bytes calldata data) public virtual returns (bool success);
+     
+     /**
+     * @dev Event that is fired on successful transfer.
+     */
+    event Transfer(address indexed from, address indexed to, uint value);
+    
+     /**
+     * @dev Additional event that is fired on successful transfer and logs transfer metadata,
+     *      this event is implemented to keep Transfer event compatible with ERC20.
+     */
+    event TransferData(bytes data);
+}
+
+abstract contract IERC223Recipient {
+
+
+ struct ERC223TransferInfo
+    {
+        address token_contract;
+        address sender;
+        uint256 value;
+        bytes   data;
+    }
+    
+    ERC223TransferInfo private tkn;
+    
 /**
- * @dev Interface of the ERC20 standard as defined in the EIP. 
+ * @dev Standard ERC223 function that will handle incoming token transfers.
+ *
+ * @param _from  Token sender address.
+ * @param _value Amount of tokens.
+ * @param _data  Transaction metadata.
  */
-interface IERC20 {
-    /**
-     * @dev Returns the amount of tokens in existence.
-     */
-    function totalSupply() external view returns (uint256);
-
-    /**
-     * @dev Returns the amount of tokens owned by `account`.
-     */
-    function balanceOf(address account) external view returns (uint256);
-
-    /**
-     * @dev Moves `amount` tokens from the caller's account to `recipient`.
-     *
-     * Returns a boolean value indicating whether the operation succeeded.
-     *
-     * Emits a `Transfer` event.
-     */
-    function transfer(address recipient, uint256 amount) external returns (bool);
-
-    /**
-     * @dev Returns the remaining number of tokens that `spender` will be
-     * allowed to spend on behalf of `owner` through `transferFrom`. This is
-     * zero by default.
-     *
-     * This value changes when `approve` or `transferFrom` are called.
-     */
-    function allowance(address owner, address spender) external view returns (uint256);
-
-    /**
-     * @dev Sets `amount` as the allowance of `spender` over the caller's tokens.
-     *
-     * Returns a boolean value indicating whether the operation succeeded.
-     *
-     * > Beware that changing an allowance with this method brings the risk
-     * that someone may use both the old and the new allowance by unfortunate
-     * transaction ordering. One possible solution to mitigate this race
-     * condition is to first reduce the spender's allowance to 0 and set the
-     * desired value afterwards:
-     * https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
-     *
-     * Emits an `Approval` event.
-     */
-    function approve(address spender, uint256 amount) external returns (bool);
-
-    /**
-     * @dev Moves `amount` tokens from `sender` to `recipient` using the
-     * allowance mechanism. `amount` is then deducted from the caller's
-     * allowance.
-     *
-     * Returns a boolean value indicating whether the operation succeeded.
-     *
-     * Emits a `Transfer` event.
-     */
-    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
-
-    /**
-     * @dev Emitted when `value` tokens are moved from one account (`from`) to
-     * another (`to`).
-     *
-     * Note that `value` may be zero.
-     */
-    event Transfer(address indexed from, address indexed to, uint256 value);
-
-    /**
-     * @dev Emitted when the allowance of a `spender` for an `owner` is set by
-     * a call to `approve`. `value` is the new allowance.
-     */
-    event Approval(address indexed owner, address indexed spender, uint256 value);
+    function tokenReceived(address _from, uint _value, bytes memory _data) public virtual
+    {
+        /**
+         * @dev Note that inside of the token transaction handler the actual sender of token transfer is accessible via the tkn.sender variable
+         * (analogue of msg.sender for Ether transfers)
+         * 
+         * tkn.value - is the amount of transferred tokens
+         * tkn.data  - is the "metadata" of token transfer
+         * tkn.token_contract is most likely equal to msg.sender because the token contract typically invokes this function
+        */
+        tkn.token_contract = msg.sender;
+        tkn.sender         = _from;
+        tkn.value          = _value;
+        tkn.data           = _data;
+        
+        // ACTUAL CODE
+    }
 }
 
 
@@ -130,75 +131,6 @@ library Address {
         // solhint-disable-next-line no-inline-assembly
         assembly { size := extcodesize(account) }
         return size > 0;
-    }
-}
-
-/**
- * @title SafeERC20
- * @dev Wrappers around ERC20 operations that throw on failure (when the token
- * contract returns false). Tokens that return no value (and instead revert or
- * throw on failure) are also supported, non-reverting calls are assumed to be
- * successful.
- * To use this library you can add a `using SafeERC20 for ERC20;` statement to your contract,
- * which allows you to call the safe operations as `token.safeTransfer(...)`, etc.
- */
-library SafeERC20 {
-    using Address for address;
-
-    function safeTransfer(IERC20 token, address to, uint256 value) internal {
-        callOptionalReturn(token, abi.encodeWithSelector(token.transfer.selector, to, value));
-    }
-
-    function safeTransferFrom(IERC20 token, address from, address to, uint256 value) internal {
-        callOptionalReturn(token, abi.encodeWithSelector(token.transferFrom.selector, from, to, value));
-    }
-
-    function safeApprove(IERC20 token, address spender, uint256 value) internal {
-        // safeApprove should only be called when setting an initial allowance,
-        // or when resetting it to zero. To increase and decrease it, use
-        // 'safeIncreaseAllowance' and 'safeDecreaseAllowance'
-        // solhint-disable-next-line max-line-length
-        require((value == 0) || (token.allowance(address(this), spender) == 0),
-            "SafeERC20: approve from non-zero to non-zero allowance"
-        );
-        callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, value));
-    }
-
-    function safeIncreaseAllowance(IERC20 token, address spender, uint256 value) internal {
-        uint256 newAllowance = token.allowance(address(this), spender) + value;
-        callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, newAllowance));
-    }
-
-    function safeDecreaseAllowance(IERC20 token, address spender, uint256 value) internal {
-        uint256 newAllowance = token.allowance(address(this), spender) - value;
-        callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, newAllowance));
-    }
-
-    /**
-     * @dev Imitates a Solidity high-level call (i.e. a regular function call to a contract), relaxing the requirement
-     * on the return value: the return value is optional (but if data is returned, it must not be false).
-     * @param token The token targeted by the call.
-     * @param data The call data (encoded using abi.encode or one of its variants).
-     */
-    function callOptionalReturn(IERC20 token, bytes memory data) private {
-        // We need to perform a low level call here, to bypass Solidity's return data size checking mechanism, since
-        // we're implementing it ourselves.
-
-        // A Solidity high level call has three parts:
-        //  1. The target address is checked to verify it contains contract code
-        //  2. The call itself is made, and success asserted
-        //  3. The return value is decoded, which in turn checks the size of the returned data.
-        // solhint-disable-next-line max-line-length
-        require(address(token).isContract(), "SafeERC20: call to non-contract");
-
-        // solhint-disable-next-line avoid-low-level-calls
-        (bool success, bytes memory returndata) = address(token).call(data);
-        require(success, "SafeERC20: low-level call failed");
-
-        if (returndata.length > 0) { // Return data is optional
-            // solhint-disable-next-line max-line-length
-            require(abi.decode(returndata, (bool)), "SafeERC20: ERC20 operation did not succeed");
-        }
     }
 }
 
@@ -250,8 +182,6 @@ interface IStakingRewards {
 
     // Mutative
 
-    function stake(uint256 amount) external;
-
     function withdraw(uint256 amount) external;
 
     function getReward() external;
@@ -274,13 +204,12 @@ abstract contract RewardsDistributionRecipient {
     }
 }
 
-contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, ReentrancyGuard {
-    using SafeERC20 for IERC20;
-
+contract StakingRewards is IERC223Recipient, IStakingRewards, RewardsDistributionRecipient, ReentrancyGuard {
+    
     /* ========== STATE VARIABLES ========== */
 
-    IERC20 public rewardsToken;
-    IERC20 public stakingToken;
+    IERC223 public rewardsToken;
+    IERC223 public stakingToken;
     uint256 public periodFinish = 0;
     uint256 public rewardRate = 0;
     uint256 public rewardsDuration = 1 days;
@@ -301,10 +230,51 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
         address _stakingToken
     )
     {
-        rewardsToken = IERC20(_rewardsToken);
-        stakingToken = IERC20(_stakingToken);
+        rewardsToken = IERC223(_rewardsToken);
+        stakingToken = IERC223(_stakingToken);
         rewardsDistribution = _rewardsDistribution;
     }
+    
+    /* ========== ERC223 transaction handlers ====== */
+    
+    function tokenReceived(address _from, uint256 _amount, bytes calldata _data) public override nonReentrant
+    {
+        _data; // Stupid warning silenced.
+        
+        require(msg.sender == address(stakingToken), "Wrong token deposit reverted");
+        require(_amount > 0, "Cannot stake 0");
+        
+        _totalSupply = _totalSupply + _amount;
+        _balances[_from] += _amount;
+        emit Staked(_from, _amount);
+    }
+    
+// Old `stake` functions are unnecessary since ERC223 implementation.
+/*
+    function stakeWithPermit(uint256 amount, uint deadline, uint8 v, bytes32 r, bytes32 s) external nonReentrant updateReward(msg.sender) {
+        require(amount > 0, "Cannot stake 0");
+        _totalSupply = _totalSupply + amount;
+        _balances[msg.sender] = _balances[msg.sender] + amount;
+
+        // permit
+        IUniswapV2ERC20(address(stakingToken)).permit(msg.sender, address(this), amount, deadline, v, r, s);
+
+        stakingToken.transfer(msg.sender, address(this), amount);
+        emit Staked(msg.sender, amount);
+    }
+*/
+
+
+/*  
+//  Stake function must be re-implemented to be auto-called on incoming ERC223 transfer of token `stakingToken`
+    function stake(uint256 amount) external override nonReentrant updateReward(msg.sender) {
+        require(amount > 0, "Cannot stake 0");
+        _totalSupply = _totalSupply + amount;
+        _balances[msg.sender] = _balances[msg.sender] + amount;
+        stakingToken.safeTransferFrom(msg.sender, address(this), amount);
+        emit Staked(msg.sender, amount);
+    }
+*/
 
     /* ========== VIEWS ========== */
 
@@ -350,31 +320,12 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function stakeWithPermit(uint256 amount, uint deadline, uint8 v, bytes32 r, bytes32 s) external nonReentrant updateReward(msg.sender) {
-        require(amount > 0, "Cannot stake 0");
-        _totalSupply = _totalSupply + amount;
-        _balances[msg.sender] = _balances[msg.sender] + amount;
-
-        // permit
-        IUniswapV2ERC20(address(stakingToken)).permit(msg.sender, address(this), amount, deadline, v, r, s);
-
-        stakingToken.safeTransferFrom(msg.sender, address(this), amount);
-        emit Staked(msg.sender, amount);
-    }
-
-    function stake(uint256 amount) external override nonReentrant updateReward(msg.sender) {
-        require(amount > 0, "Cannot stake 0");
-        _totalSupply = _totalSupply + amount;
-        _balances[msg.sender] = _balances[msg.sender] + amount;
-        stakingToken.safeTransferFrom(msg.sender, address(this), amount);
-        emit Staked(msg.sender, amount);
-    }
 
     function withdraw(uint256 amount) public override nonReentrant updateReward(msg.sender) {
         require(amount > 0, "Cannot withdraw 0");
         _totalSupply = _totalSupply - amount;
         _balances[msg.sender] = _balances[msg.sender] - amount;
-        stakingToken.safeTransfer(msg.sender, amount);
+        stakingToken.transfer(msg.sender, amount);
         emit Withdrawn(msg.sender, amount);
     }
 
@@ -382,7 +333,7 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
         uint256 reward = rewards[msg.sender];
         if (reward > 0) {
             rewards[msg.sender] = 0;
-            rewardsToken.safeTransfer(msg.sender, reward);
+            rewardsToken.transfer(msg.sender, reward);
             emit RewardPaid(msg.sender, reward);
         }
     }
