@@ -435,14 +435,24 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
             rewardPerTokenStored.add(
                 lastTimeRewardApplicable().sub(lastUpdateTime).mul(rewardRate).mul(1e18).div(_totalSupply)
             );
+            
+            /*
+            rewardPerTokenStored + lastTimeRewardApplicable() - lastUpdateTime * rewardRate * 1e18 / _totalSupply
+            */
+            
+            
     }
 
     function earned(address account) public view returns (uint256) {
         return _balances[account].mul(rewardPerToken().sub(userRewardPerTokenPaid[account])).div(1e18).add(rewards[account]);
+        
+        // _balances[account] * ( rewardPerToken() - userRewardPerTokenPaid[account] / 1e18 + rewards[account]
     }
 
     function getRewardForDuration() external view returns (uint256) {
         return rewardRate.mul(rewardsDuration);
+        
+        // rewardRate * rewardsDuration
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
