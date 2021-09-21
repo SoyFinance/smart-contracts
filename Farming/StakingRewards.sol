@@ -33,12 +33,6 @@ library Math {
 }
 
 abstract contract IERC223 {
-    
-    function name()        public view virtual returns (string memory);
-    function symbol()      public view virtual returns (string memory);
-    function decimals()    public view virtual returns (uint8);
-    function totalSupply() public view virtual returns (uint256);
-    
     /**
      * @dev Returns the balance of the `who` address.
      */
@@ -69,8 +63,7 @@ abstract contract IERC223 {
 }
 
 abstract contract IERC223Recipient {
-
-
+    
  struct ERC223TransferInfo
     {
         address token_contract;
@@ -88,23 +81,7 @@ abstract contract IERC223Recipient {
  * @param _value Amount of tokens.
  * @param _data  Transaction metadata.
  */
-    function tokenReceived(address _from, uint _value, bytes memory _data) public virtual
-    {
-        /**
-         * @dev Note that inside of the token transaction handler the actual sender of token transfer is accessible via the tkn.sender variable
-         * (analogue of msg.sender for Ether transfers)
-         * 
-         * tkn.value - is the amount of transferred tokens
-         * tkn.data  - is the "metadata" of token transfer
-         * tkn.token_contract is most likely equal to msg.sender because the token contract typically invokes this function
-        */
-        tkn.token_contract = msg.sender;
-        tkn.sender         = _from;
-        tkn.value          = _value;
-        tkn.data           = _data;
-        
-        // ACTUAL CODE
-    }
+    function tokenReceived(address _from, uint _value, bytes memory _data) public virtual;
 }
 
 
