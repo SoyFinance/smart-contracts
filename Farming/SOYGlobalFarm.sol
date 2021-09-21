@@ -87,16 +87,20 @@ interface ILocalFarm {
 
 contract GlobalFarm is Ownable {
     struct LocalFarm {
-        address localFarm;
-        uint32 multiplier;
+        address farmAddress;
+        uint32  multiplier;
     }
     
-    IMintableToken public rewardsToken; // SOY token
+    IMintableToken public rewardsToken;          // SOY token
     uint256 public tokensPerYear = 50 * 10**6 * 10*18;  // 50M tokens
     uint256 public totalMultipliers;
-    LocalFarm[] public localFarms;  // local farms list
-    mapping(address => uint256) localFarmId; // locals farm address => id in list (1 based)
-    mapping(address => uint256) public nextMint; // timestamp when token may be minted to local farm
+    //LocalFarm[] public localFarms;               // local farms list
+    
+    mapping(uint256 => LocalFarm) public localFarms;
+    uint256                       public lastAddedFarmIndex = 0; // Farm IDs will start from 1
+    
+    mapping(address => uint256)   public localFarmId;     // locals farm address => id; localFarm at ID = 0 is considered non-existing
+    mapping(address => uint256)   public nextMint; // timestamp when token may be minted to local farm
 
 
     event AddLocalFarm(address _localFarm, uint32 _multiplier);
@@ -109,52 +113,74 @@ contract GlobalFarm is Ownable {
     }
 
     function getLocalFarmId(address _localFarm) external view returns (uint256) {
-        uint256 valueIndex =  localFarmId[_localFarm];
-        require (valueIndex != 0, "LocalFarm not exist");
-        return valueIndex - 1;
+        return localFarmId[_localFarm];
     }
 
-    function addLocalFarm(address _localFarm, uint32 _multiplier) external onlyOwner {
-        require(localFarmId[_localFarm] == 0,  "LocalFarm exist");
-        localFarms.push(LocalFarm(_localFarm, _multiplier));
-        localFarmId[_localFarm] = localFarms.length;
+    function addLocalFarm(address _localFarmAddress, uint32 _multiplier) external onlyOwner {
+        require(localFarmId[_localFarmAddress] == 0,  "LocalFarm with this address already exists");
+        
+        // Increment last index before adding a farm.
+        // Farm with index = 0 is considered non-existing.
+        lastAddedFarmIndex++;
+        
+        //localFarms.push(LocalFarm(_localFarm, _multiplier));
+        
+        localFarms[lastAddedFarmIndex].farmAddress = _localFarmAddress;
+        localFarms[lastAddedFarmIndex].multiplier  = _multiplier;
+        localFarmId[_localFarmAddress]             = lastAddedFarmIndex;
+        
         totalMultipliers += uint256(_multiplier);
-        emit AddLocalFarm(_localFarm, _multiplier);
+        
+        emit AddLocalFarm(_localFarmAddress, _multiplier);
     }
 
-    function removeLocalFarm(address _localFarm) external onlyOwner {
-        uint256 valueIndex = localFarmId[_localFarm];
-        require (valueIndex != 0, "LocalFarm not exist"); 
+    function addLocalFarmAtID(address _localFarmAddress, uint256 _id, uint32 _multiplier) external onlyOwner {
+        require(localFarmId[_localFarmAddress] == 0,  "LocalFarm with this address already exists");
+        require(_id != 0,  "LocalFarm at address 0 is considered non-existing by system");
+        require(_id < lastAddedFarmIndex, "Can not add farms ahead of autoincremented index");
+        
+        // Increment last index before adding a farm.
+        
+        //localFarms.push(LocalFarm(_localFarm, _multiplier));
+        
+        localFarms[_id].farmAddress = _localFarmAddress;
+        localFarms[_id].multiplier  = _multiplier;
+        localFarmId[_localFarmAddress]             = _id;
+        
+        totalMultipliers += uint256(_multiplier);
+        
+        emit AddLocalFarm(_localFarmAddress, _multiplier);
+    }
+    
+    function farmExists(address _farmAddress) public view returns (bool _exists)
+    {
+        return (localFarmId[_farmAddress] != 0) && (localFarms[localFarmId[_farmAddress]].farmAddress != address(0));
+    }
 
-        uint256 toDeleteIndex = valueIndex - 1;
-        uint256 lastIndex = localFarms.length - 1;
-        totalMultipliers = totalMultipliers - uint256(localFarms[toDeleteIndex].multiplier); // update totalMultipliers
-
-        // When the value to delete is the last one, the swap operation is unnecessary. However, since this occurs
-        // so rarely, we still do the swap anyway to avoid the gas cost of adding an 'if' statement.
-
-        LocalFarm memory lastvalue = localFarms[lastIndex];
-        // Move the last value to the index where the value to delete is
-        localFarms[toDeleteIndex] = lastvalue;
-        // Update the index for the moved value
-        localFarmId[lastvalue.localFarm] = toDeleteIndex + 1; // All indexes are 1-based
-
-        // Delete the slot where the moved value was stored
-        localFarms.pop();
-        // Delete the index for the deleted slot
-        delete localFarmId[_localFarm];
-        emit RemoveLocalFarm(_localFarm);
+    function removeLocalFarmByAddress(address _localFarmAddress) external onlyOwner {
+        require (farmExists(_localFarmAddress), "LocalFarm with this address does not exist");
+        require (localFarmId[_localFarmAddress] != 0, "LocalFarm with this address does not exist"); 
+        
+        totalMultipliers = totalMultipliers - uint256(localFarms[localFarmId[_localFarmAddress]].multiplier); // update totalMultipliers
+        
+        //delete localFarmId[_localFarmAddress];
+        
+        localFarms[localFarmId[_localFarmAddress]].farmAddress = address(0);
+        localFarms[localFarmId[_localFarmAddress]].multiplier  = 0;
+        
+        localFarmId[_localFarmAddress] = 0;
+        
+        emit RemoveLocalFarm(_localFarmAddress);
     }
 
 
-    function changeMultiplier(address _localFarm, uint32 _multiplier) external onlyOwner {
-        uint256 valueIndex = localFarmId[_localFarm];
-        require (valueIndex != 0, "LocalFarm not exist");
-        valueIndex--;
-        uint32 oldMultiplier = localFarms[valueIndex].multiplier;
+    function changeMultiplier(address _localFarmAddress, uint32 _multiplier) external onlyOwner {
+        require (farmExists(_localFarmAddress), "LocalFarm with this address does not exist");
+        
+        uint32 oldMultiplier = localFarms[localFarmId[_localFarmAddress]].multiplier;
         totalMultipliers = totalMultipliers + uint256(_multiplier) - uint256(oldMultiplier); // update totalMultipliers
-        localFarms[valueIndex].multiplier = _multiplier;
-        emit ChangeMultiplier(_localFarm, oldMultiplier, _multiplier);
+        localFarms[localFarmId[_localFarmAddress]].multiplier = _multiplier;
+        emit ChangeMultiplier(_localFarmAddress, oldMultiplier, _multiplier);
     }
 
     function changeTokenPerYear(uint256 newAmount) external onlyOwner {
@@ -163,15 +189,17 @@ contract GlobalFarm is Ownable {
         emit ChangeTokenPerYear(oldAmount, newAmount);
     }
 
-    function mintFarmingReward(address _localFarm, uint256 _period) external {
-        uint256 valueIndex = localFarmId[_localFarm];
-        require (valueIndex != 0, "LocalFarm not exist");
-        require (nextMint[_localFarm] < block.timestamp);
-        valueIndex--;
+    function mintFarmingReward(address _localFarmAddress, uint256 _period) external {
+        require (farmExists(_localFarmAddress), "LocalFarm with this address does not exist");
+        require (nextMint[_localFarmAddress] < block.timestamp);
+        
+        
         uint256 amount = tokensPerYear * _period / 365 days; // for all farms
-        amount = amount * localFarms[valueIndex].multiplier / totalMultipliers; // amount per local farm
-        nextMint[_localFarm] = nextMint[_localFarm] + _period;
-        rewardsToken.mint(_localFarm, amount);
-        ILocalFarm(_localFarm).notifyRewardAmount(amount);
+        amount = amount * localFarms[localFarmId[_localFarmAddress]].multiplier / totalMultipliers; // amount per local farm
+        
+        nextMint[_localFarmAddress] = nextMint[_localFarmAddress] + _period;
+        
+        rewardsToken.mint(_localFarmAddress, amount);
+        ILocalFarm(_localFarmAddress).notifyRewardAmount(amount);
     }
 }
