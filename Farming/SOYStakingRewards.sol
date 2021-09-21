@@ -166,10 +166,6 @@ interface IStakingRewards {
     function exit() external;
 }
 
-interface IGlobalFarm {
-    function mintFarming(address localFarm, uint256 period) external;
-}
-
 abstract contract RewardsDistributionRecipient {
     address public rewardsDistribution;
 
