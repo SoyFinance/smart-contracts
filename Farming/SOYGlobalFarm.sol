@@ -77,7 +77,7 @@ contract Ownable {
     }
 }
 
-interface IERC20 {
+interface IMintableToken {
     function mint(address _to, uint256 _amount) external;
 }
 
@@ -91,7 +91,7 @@ contract GlobalFarm is Ownable {
         uint32 multiplier;
     }
     
-    IERC20 public rewardsToken; // SOY token
+    IMintableToken public rewardsToken; // SOY token
     uint256 public tokensPerYear = 50 * 10**6 * 10*18;  // 50M tokens
     uint256 public totalMultipliers;
     LocalFarm[] public localFarms;  // local farms list
@@ -105,7 +105,7 @@ contract GlobalFarm is Ownable {
     event ChangeTokenPerYear(uint256 oldAmount, uint256 newAmount);
 
     constructor (address _rewardsToken) {
-        rewardsToken = IERC20(_rewardsToken);
+        rewardsToken = IMintableToken(_rewardsToken);
     }
 
     function getLocalFarmId(address _localFarm) external view returns (uint256) {
