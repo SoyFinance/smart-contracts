@@ -177,6 +177,10 @@ abstract contract RewardsDistributionRecipient {
     }
 }
 
+interface IGlobalFarm {
+    function mintFarmingReward(address _localFarm, uint256 _period) external;
+}
+
 contract StakingRewards is IERC223Recipient, IStakingRewards, RewardsDistributionRecipient, ReentrancyGuard {
     
     /* ========== STATE VARIABLES ========== */
@@ -265,28 +269,15 @@ contract StakingRewards is IERC223Recipient, IStakingRewards, RewardsDistributio
         if (_totalSupply == 0) {
             return rewardPerTokenStored;
         }
-        return
-            rewardPerTokenStored + (
-                lastTimeRewardApplicable() - lastUpdateTime * rewardRate * 1e18 / _totalSupply
-            );
-            
-            /*
-            rewardPerTokenStored + lastTimeRewardApplicable() - lastUpdateTime * rewardRate * 1e18 / _totalSupply
-            */
-            
-            
+        return rewardPerTokenStored + (lastTimeRewardApplicable() - lastUpdateTime * rewardRate * 1e18 / _totalSupply);
     }
 
     function earned(address account) public view override returns (uint256) {
         return _balances[account] * rewardPerToken() - userRewardPerTokenPaid[account] / 1e18 + rewards[account];
-        
-        // _balances[account] * ( rewardPerToken() - userRewardPerTokenPaid[account] / 1e18 + rewards[account]
     }
 
     function getRewardForDuration() external view override returns (uint256) {
         return rewardRate * rewardsDuration;
-        
-        // rewardRate * rewardsDuration
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -355,7 +346,7 @@ contract StakingRewards is IERC223Recipient, IStakingRewards, RewardsDistributio
             userRewardPerTokenPaid[account] = rewardPerTokenStored;
             if (block.timestamp >= periodFinish) {
                 // start new period
-                IGlobalFarm(rewardsDistribution).mintFarming(address(this), rewardsDuration);
+                IGlobalFarm(rewardsDistribution).mintFarmingReward(address(this), rewardsDuration);
                 // User received reward up to start new period.
                 // Add reward for user from start of new period
                 rewardPerTokenStored = rewardPerToken();
