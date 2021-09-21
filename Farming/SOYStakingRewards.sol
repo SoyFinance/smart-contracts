@@ -145,16 +145,16 @@ contract ReentrancyGuard {
 interface IStakingRewards {
     // Views
     function lastTimeRewardApplicable() external view returns (uint256);
-    function rewardPerToken() external view returns (uint256);
-    function earned(address account) external view returns (uint256);
-    function getRewardForDuration() external view returns (uint256);
-    function totalSupply() external view returns (uint256);
+    function rewardPerToken()           external view returns (uint256);
+    function earned(address account)    external view returns (uint256);
+    function getRewardForDuration()     external view returns (uint256);
+    function totalSupply()              external view returns (uint256);
     function balanceOf(address account) external view returns (uint256);
 
     // Mutative
     function withdraw(uint256 amount) external;
-    function getReward() external;
-    function exit() external;
+    function getReward()              external;
+    function exit()                   external;
 }
 
 abstract contract RewardsDistributionRecipient {
@@ -187,7 +187,7 @@ contract StakingRewards is IERC223Recipient, IStakingRewards, RewardsDistributio
     mapping(address => uint256) public userRewardPerTokenPaid;
     mapping(address => uint256) public rewards;
 
-    uint256                     private _totalSupply;
+    uint256                     private totalFarmingSupply;
     mapping(address => uint256) private _balances;
 
     /* ========== CONSTRUCTOR ========== */
@@ -212,7 +212,7 @@ contract StakingRewards is IERC223Recipient, IStakingRewards, RewardsDistributio
         require(msg.sender == address(stakingToken), "Wrong token deposit reverted");
         require(_amount > 0, "Cannot stake 0");
         
-        _totalSupply     += _amount;
+        totalFarmingSupply     += _amount;
         _balances[_from] += _amount;
         
         emit Staked(_from, _amount);
@@ -222,7 +222,7 @@ contract StakingRewards is IERC223Recipient, IStakingRewards, RewardsDistributio
 /*
     function stakeWithPermit(uint256 amount, uint deadline, uint8 v, bytes32 r, bytes32 s) external nonReentrant updateReward(msg.sender) {
         require(amount > 0, "Cannot stake 0");
-        _totalSupply = _totalSupply + amount;
+        totalFarmingSupply = totalFarmingSupply + amount;
         _balances[msg.sender] = _balances[msg.sender] + amount;
         // permit
         IUniswapV2ERC20(address(stakingToken)).permit(msg.sender, address(this), amount, deadline, v, r, s);
@@ -236,7 +236,7 @@ contract StakingRewards is IERC223Recipient, IStakingRewards, RewardsDistributio
 //  Stake function must be re-implemented to be auto-called on incoming ERC223 transfer of token `stakingToken`
     function stake(uint256 amount) external override nonReentrant updateReward(msg.sender) {
         require(amount > 0, "Cannot stake 0");
-        _totalSupply = _totalSupply + amount;
+        totalFarmingSupply = totalFarmingSupply + amount;
         _balances[msg.sender] = _balances[msg.sender] + amount;
         stakingToken.safeTransferFrom(msg.sender, address(this), amount);
         emit Staked(msg.sender, amount);
@@ -246,7 +246,7 @@ contract StakingRewards is IERC223Recipient, IStakingRewards, RewardsDistributio
     /* ========== VIEWS ========== */
 
     function totalSupply() external view override returns (uint256) {
-        return _totalSupply;
+        return totalFarmingSupply;
     }
 
     function balanceOf(address account) external view override returns (uint256) {
@@ -258,10 +258,10 @@ contract StakingRewards is IERC223Recipient, IStakingRewards, RewardsDistributio
     }
 
     function rewardPerToken() public view override returns (uint256) {
-        if (_totalSupply == 0) {
+        if (totalFarmingSupply == 0) {
             return rewardPerTokenStored;
         }
-        return rewardPerTokenStored + (lastTimeRewardApplicable() - lastUpdateTime * rewardRate * 1e18 / _totalSupply);
+        return rewardPerTokenStored + (lastTimeRewardApplicable() - lastUpdateTime * rewardRate * 1e18 / totalFarmingSupply);
     }
 
     function earned(address account) public view override returns (uint256) {
@@ -278,7 +278,7 @@ contract StakingRewards is IERC223Recipient, IStakingRewards, RewardsDistributio
     function withdraw(uint256 amount) public override nonReentrant updateReward(msg.sender) {
         require(amount > 0, "Cannot withdraw 0");
         
-        _totalSupply          -= amount;
+        totalFarmingSupply          -= amount;
         _balances[msg.sender] -= amount;
         
         stakingToken.transfer(msg.sender, amount);
