@@ -86,14 +86,17 @@ interface ILocalFarm {
 }
 
 contract GlobalFarm is Ownable {
+    
     struct LocalFarm {
         address farmAddress;
         uint32  multiplier;
+        uint256 lastMintTimestamp;
     }
     
-    IMintableToken public rewardsToken;          // SOY token
+    IMintableToken public rewardsToken;                 // SOY token
     uint256 public tokensPerYear = 50 * 10**6 * 10*18;  // 50M tokens
     uint256 public totalMultipliers;
+    uint256 public rewardDuration = 1 days;
     //LocalFarm[] public localFarms;               // local farms list
     
     mapping(uint256 => LocalFarm) public localFarms;
@@ -112,8 +115,12 @@ contract GlobalFarm is Ownable {
         rewardsToken = IMintableToken(_rewardsToken);
     }
 
-    function getLocalFarmId(address _localFarm) external view returns (uint256) {
-        return localFarmId[_localFarm];
+    function getLocalFarmId(address _localFarmAddress) external view returns (uint256) {
+        return localFarmId[_localFarmAddress];
+    }
+    
+    function getLastMintTimestamp(address _localFarmAddress) external view returns (uint256) {
+        return localFarms[localFarmId[_localFarmAddress]].lastMintTimestamp;
     }
 
     function addLocalFarm(address _localFarmAddress, uint32 _multiplier) external onlyOwner {
@@ -125,8 +132,10 @@ contract GlobalFarm is Ownable {
         
         //localFarms.push(LocalFarm(_localFarm, _multiplier));
         
-        localFarms[lastAddedFarmIndex].farmAddress = _localFarmAddress;
-        localFarms[lastAddedFarmIndex].multiplier  = _multiplier;
+        localFarms[lastAddedFarmIndex].farmAddress       = _localFarmAddress;
+        localFarms[lastAddedFarmIndex].multiplier        = _multiplier;
+        localFarms[lastAddedFarmIndex].lastMintTimestamp = block.timestamp;
+        
         localFarmId[_localFarmAddress]             = lastAddedFarmIndex;
         
         totalMultipliers += uint256(_multiplier);
@@ -165,8 +174,9 @@ contract GlobalFarm is Ownable {
         
         //delete localFarmId[_localFarmAddress];
         
-        localFarms[localFarmId[_localFarmAddress]].farmAddress = address(0);
-        localFarms[localFarmId[_localFarmAddress]].multiplier  = 0;
+        localFarms[localFarmId[_localFarmAddress]].farmAddress        = address(0);
+        localFarms[localFarmId[_localFarmAddress]].multiplier         = 0; // Not critically important, can be removed for gas efficiency reasons.
+        localFarms[localFarmId[_localFarmAddress]].lastMintTimestamp  = 0; // Not critically important, can be removed for gas efficiency reasons.
         
         localFarmId[_localFarmAddress] = 0;
         
@@ -191,15 +201,49 @@ contract GlobalFarm is Ownable {
 
     function mintFarmingReward(address _localFarmAddress, uint256 _period) external {
         require (farmExists(_localFarmAddress), "LocalFarm with this address does not exist");
-        require (nextMint[_localFarmAddress] < block.timestamp);
+        require (_period > 0, "Cannot claim reward for a timeframe of 0 seconds");
+        //require (nextMint[_localFarmAddress] < block.timestamp); // Can not place a "requirement" on auto-executable function.
         
+        if(localFarms[localFarmId[_localFarmAddress]].lastMintTimestamp + rewardDuration < block.timestamp)
+        {
+            // We should check if sufficient time since the last minting session passed for this Local Farm.
+            
+            if(_period < block.timestamp - localFarms[localFarmId[_localFarmAddress]].lastMintTimestamp)
+            {
+                // Claiming for less-than-maximum period.
+                // This can be necessary if the contract stayed without claiming for too long
+                // and the accumulated reward can not be minted in one transaction.
+                
+                // In this case this function `mintFarmingReward` can be manually claimed by a user multiple times
+                // in order to mint reward part-by-part.
+                
+                // Last Mint Timestamp of the local farm must be updated to match the time preriod
+                // that user already claimed reward for.
+                
+                localFarms[localFarmId[_localFarmAddress]].lastMintTimestamp += _period;
+            }
+            else
+            {
+                // Otherwise the reward is distributed for the total reward period duration,
+                // it is important to note that user can not cause the contract to print reward in the future.
+                
+                _period = block.timestamp - localFarms[localFarmId[_localFarmAddress]].lastMintTimestamp;
+                localFarms[localFarmId[_localFarmAddress]].lastMintTimestamp = block.timestamp;
+            }
+            
+            // Reward is then calculated based on the _period
+            // it can be either "specified period" or "now - Local Farm's previous minting timestamp".
+            uint256 amount = tokensPerYear * _period / 365 days; // for all farms
+            amount = amount * localFarms[localFarmId[_localFarmAddress]].multiplier / totalMultipliers; // amount per local farm
         
-        uint256 amount = tokensPerYear * _period / 365 days; // for all farms
-        amount = amount * localFarms[localFarmId[_localFarmAddress]].multiplier / totalMultipliers; // amount per local farm
+            // Local farm is then notified about the reward minting session.
+            rewardsToken.mint(_localFarmAddress, amount);
+            ILocalFarm(_localFarmAddress).notifyRewardAmount(amount);
+        }
         
-        nextMint[_localFarmAddress] = nextMint[_localFarmAddress] + _period;
-        
-        rewardsToken.mint(_localFarmAddress, amount);
-        ILocalFarm(_localFarmAddress).notifyRewardAmount(amount);
+        // Otherwise if the previous minting session occured recently and the time condition was not met
+        // this function does nothing. It should not revert execution
+        // because it is automatically called by Local Farms sometimes
+        // therefore the call will not fail but the minting will simply not happen.
     }
 }
