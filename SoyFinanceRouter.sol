@@ -2,7 +2,7 @@
 
 // File @uniswap/lib/contracts/libraries/TransferHelper.sol@v1.1.1
 
-pragma solidity >=0.6.2;
+pragma solidity >=0.6.6;
 
 // helper methods for interacting with ERC20 tokens and sending ETH that do not consistently return true/false
 library TransferHelper {
@@ -24,9 +24,9 @@ library TransferHelper {
         require(success && (data.length == 0 || abi.decode(data, (bool))), 'TransferHelper: TRANSFER_FROM_FAILED');
     }
 
-    function safeTransferETH(address to, uint value) internal {
+    function safeTransferCLO(address to, uint value) internal {
         (bool success,) = to.call{value:value}(new bytes(0));
-        require(success, 'TransferHelper: ETH_TRANSFER_FAILED');
+        require(success, 'TransferHelper: CLO_TRANSFER_FAILED');
     }
 }
 
@@ -434,7 +434,7 @@ contract SoyFinanceRouter is ISoyFinanceRouter02 {
         assert(IWETH(WETH).transfer(pair, amountCLO));
         liquidity = ISoyFinancePair(pair).mint(to);
         // refund dust eth, if any
-        if (msg.value > amountCLO) TransferHelper.safeTransferETH(msg.sender, msg.value - amountCLO);
+        if (msg.value > amountCLO) TransferHelper.safeTransferCLO(msg.sender, msg.value - amountCLO);
     }
 
     // **** REMOVE LIQUIDITY ****
@@ -474,7 +474,7 @@ contract SoyFinanceRouter is ISoyFinanceRouter02 {
         );
         TransferHelper.safeTransfer(token, to, amountToken);
         IWETH(WETH).withdraw(amountCLO);
-        TransferHelper.safeTransferETH(to, amountCLO);
+        TransferHelper.safeTransferCLO(to, amountCLO);
     }
     function removeLiquidityWithPermit(
         address tokenA,
@@ -526,7 +526,7 @@ contract SoyFinanceRouter is ISoyFinanceRouter02 {
         );
         TransferHelper.safeTransfer(token, to, IERC20(token).balanceOf(address(this)));
         IWETH(WETH).withdraw(amountCLO);
-        TransferHelper.safeTransferETH(to, amountCLO);
+        TransferHelper.safeTransferCLO(to, amountCLO);
     }
     function removeLiquidityCLOWithPermitSupportingFeeOnTransferTokens(
         address token,
@@ -617,7 +617,7 @@ contract SoyFinanceRouter is ISoyFinanceRouter02 {
         );
         _swap(amounts, path, address(this));
         IWETH(WETH).withdraw(amounts[amounts.length - 1]);
-        TransferHelper.safeTransferETH(to, amounts[amounts.length - 1]);
+        TransferHelper.safeTransferCLO(to, amounts[amounts.length - 1]);
     }
     function swapExactTokensForCLO(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline)
         external
@@ -634,7 +634,7 @@ contract SoyFinanceRouter is ISoyFinanceRouter02 {
         );
         _swap(amounts, path, address(this));
         IWETH(WETH).withdraw(amounts[amounts.length - 1]);
-        TransferHelper.safeTransferETH(to, amounts[amounts.length - 1]);
+        TransferHelper.safeTransferCLO(to, amounts[amounts.length - 1]);
     }
     function swapCLOForExactTokens(uint amountOut, address[] calldata path, address to, uint deadline)
         external
@@ -651,7 +651,7 @@ contract SoyFinanceRouter is ISoyFinanceRouter02 {
         assert(IWETH(WETH).transfer(SoyFinanceLibrary.pairFor(factory, path[0], path[1]), amounts[0]));
         _swap(amounts, path, to);
         // refund dust eth, if any
-        if (msg.value > amounts[0]) TransferHelper.safeTransferETH(msg.sender, msg.value - amounts[0]);
+        if (msg.value > amounts[0]) TransferHelper.safeTransferCLO(msg.sender, msg.value - amounts[0]);
     }
 
     // **** SWAP (supporting fee-on-transfer tokens) ****
@@ -734,7 +734,7 @@ contract SoyFinanceRouter is ISoyFinanceRouter02 {
         uint amountOut = IERC20(WETH).balanceOf(address(this));
         require(amountOut >= amountOutMin, 'SoyFinanceRouter: INSUFFICIENT_OUTPUT_AMOUNT');
         IWETH(WETH).withdraw(amountOut);
-        TransferHelper.safeTransferETH(to, amountOut);
+        TransferHelper.safeTransferCLO(to, amountOut);
     }
 
     // **** LIBRARY FUNCTIONS ****
