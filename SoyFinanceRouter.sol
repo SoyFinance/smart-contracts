@@ -2,7 +2,7 @@
 
 // File @uniswap/lib/contracts/libraries/TransferHelper.sol@v1.1.1
 
-pragma solidity >=0.6.0;
+pragma solidity >=0.6.2;
 
 // helper methods for interacting with ERC20 tokens and sending ETH that do not consistently return true/false
 library TransferHelper {
@@ -30,11 +30,6 @@ library TransferHelper {
     }
 }
 
-
-// File contracts/interfaces/ISoyFinanceFactory.sol
-
-pragma solidity >=0.5.0;
-
 interface ISoyFinanceFactory {
     event PairCreated(address indexed token0, address indexed token1, address pair, uint);
 
@@ -50,11 +45,6 @@ interface ISoyFinanceFactory {
     function setFeeTo(address) external;
     function setFeeToSetter(address) external;
 }
-
-
-// File contracts/interfaces/ISoyFinanceRouter01.sol
-
-pragma solidity >=0.6.2;
 
 interface ISoyFinanceRouter01 {
     function factory() external pure returns (address);
@@ -150,11 +140,6 @@ interface ISoyFinanceRouter01 {
     function getAmountsIn(uint amountOut, address[] calldata path) external view returns (uint[] memory amounts);
 }
 
-
-// File contracts/interfaces/ISoyFinanceRouter02.sol
-
-pragma solidity >=0.6.2;
-
 interface ISoyFinanceRouter02 is ISoyFinanceRouter01 {
     function removeLiquidityETHSupportingFeeOnTransferTokens(
         address token,
@@ -195,11 +180,6 @@ interface ISoyFinanceRouter02 is ISoyFinanceRouter01 {
         uint deadline
     ) external;
 }
-
-
-// File contracts/interfaces/ISoyFinancePair.sol
-
-pragma solidity >=0.5.0;
 
 interface ISoyFinancePair {
     event Approval(address indexed owner, address indexed spender, uint value);
@@ -251,12 +231,6 @@ interface ISoyFinancePair {
 
     function initialize(address, address) external;
 }
-
-
-// File contracts/libraries/SafeMath.sol
-
-pragma solidity =0.6.6;
-
 // a library for performing overflow-safe math, courtesy of DappHub (https://github.com/dapphub/ds-math)
 
 library SafeMath {
@@ -272,12 +246,6 @@ library SafeMath {
         require(y == 0 || (z = x * y) / y == x, 'ds-math-mul-overflow');
     }
 }
-
-
-// File contracts/libraries/SoyFinanceLibrary.sol
-
-pragma solidity >=0.5.0;
-
 
 library SoyFinanceLibrary {
     using SafeMath for uint;
@@ -357,11 +325,6 @@ library SoyFinanceLibrary {
     }
 }
 
-
-// File contracts/interfaces/IERC20.sol
-
-pragma solidity >=0.5.0;
-
 interface IERC20 {
     event Approval(address indexed owner, address indexed spender, uint value);
     event Transfer(address indexed from, address indexed to, uint value);
@@ -378,26 +341,11 @@ interface IERC20 {
     function transferFrom(address from, address to, uint value) external returns (bool);
 }
 
-
-// File contracts/interfaces/IWETH.sol
-
-pragma solidity >=0.5.0;
-
 interface IWETH {
     function deposit() external payable;
     function transfer(address to, uint value) external returns (bool);
     function withdraw(uint) external;
 }
-
-
-// File contracts/SoyFinanceRouter.sol
-
-pragma solidity =0.6.6;
-
-
-
-
-
 
 contract SoyFinanceRouter is ISoyFinanceRouter02 {
     using SafeMath for uint;
