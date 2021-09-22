@@ -2,7 +2,34 @@
 
 // File contracts/interfaces/ISoyFinanceFactory.sol
 
-pragma solidity >=0.5.6;
+pragma solidity >=0.5.17;
+
+interface IERC223Recipient {
+    function tokenReceived(address _from, uint _value, bytes calldata _data) external;
+}
+
+library Address {
+    /**
+     * @dev Returns true if `account` is a contract.
+     *
+     * This test is non-exhaustive, and there may be false-negatives: during the
+     * execution of a contract's constructor, its address will be reported as
+     * not containing a contract.
+     *
+     * > It is unsafe to assume that an address for which this function returns
+     * false is an externally-owned account (EOA) and not a contract.
+     */
+    function isContract(address account) internal view returns (bool) {
+        // This method relies in extcodesize, which returns 0 for contracts in
+        // construction, since the code is only stored at the end of the
+        // constructor execution.
+
+        uint256 size;
+        // solhint-disable-next-line no-inline-assembly
+        assembly { size := extcodesize(account) }
+        return size > 0;
+    }
+}
 
 interface ISoyFinanceFactory {
     event PairCreated(address indexed token0, address indexed token1, address pair, uint);
@@ -21,7 +48,6 @@ interface ISoyFinanceFactory {
 }
 
 interface ISoyFinancePair {
-    event Approval(address indexed owner, address indexed spender, uint value);
     event Transfer(address indexed from, address indexed to, uint value);
 
     function name() external pure returns (string memory);
@@ -29,17 +55,12 @@ interface ISoyFinancePair {
     function decimals() external pure returns (uint8);
     function totalSupply() external view returns (uint);
     function balanceOf(address owner) external view returns (uint);
-    function allowance(address owner, address spender) external view returns (uint);
-
-    function approve(address spender, uint value) external returns (bool);
+    
     function transfer(address to, uint value) external returns (bool);
-    function transferFrom(address from, address to, uint value) external returns (bool);
+    function transfer(address to, uint value, bytes calldata data) external returns (bool);
 
     function DOMAIN_SEPARATOR() external view returns (bytes32);
-    function PERMIT_TYPEHASH() external pure returns (bytes32);
     function nonces(address owner) external view returns (uint);
-
-    function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external;
 
     event Mint(address indexed sender, uint amount0, uint amount1);
     event Burn(address indexed sender, uint amount0, uint amount1, address indexed to);
@@ -71,26 +92,21 @@ interface ISoyFinancePair {
     function initialize(address, address) external;
 }
 
-interface ISoyFinanceERC20 {
-    event Approval(address indexed owner, address indexed spender, uint value);
+interface ISoyFinanceERC223 {
     event Transfer(address indexed from, address indexed to, uint value);
+    event TransferData(bytes data);
 
     function name() external pure returns (string memory);
     function symbol() external pure returns (string memory);
     function decimals() external pure returns (uint8);
     function totalSupply() external view returns (uint);
     function balanceOf(address owner) external view returns (uint);
-    function allowance(address owner, address spender) external view returns (uint);
-
-    function approve(address spender, uint value) external returns (bool);
+    
     function transfer(address to, uint value) external returns (bool);
-    function transferFrom(address from, address to, uint value) external returns (bool);
+    function transfer(address to, uint value, bytes calldata data) external returns (bool);
 
     function DOMAIN_SEPARATOR() external view returns (bytes32);
-    function PERMIT_TYPEHASH() external pure returns (bytes32);
     function nonces(address owner) external view returns (uint);
-
-    function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external;
 }
 // a library for performing overflow-safe math, courtesy of DappHub (https://github.com/dapphub/ds-math)
 
@@ -108,8 +124,9 @@ library SafeMath {
     }
 }
 
-contract  SoyFinanceERC20 is ISoyFinanceERC20 {
+contract  SoyFinanceERC223 is ISoyFinanceERC223 {
     using SafeMath for uint;
+    using Address for address;
 
     string public constant name = 'SoyFinance LPs';
     string public constant symbol = 'SOY-LP';
@@ -119,11 +136,8 @@ contract  SoyFinanceERC20 is ISoyFinanceERC20 {
     mapping(address => mapping(address => uint)) public allowance;
 
     bytes32 public DOMAIN_SEPARATOR;
-    // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
-    bytes32 public constant PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
     mapping(address => uint) public nonces;
-
-    event Approval(address indexed owner, address indexed spender, uint value);
+    
     event Transfer(address indexed from, address indexed to, uint value);
 
     constructor() public {
@@ -154,47 +168,28 @@ contract  SoyFinanceERC20 is ISoyFinanceERC20 {
         emit Transfer(from, address(0), value);
     }
 
-    function _approve(address owner, address spender, uint value) private {
-        allowance[owner][spender] = value;
-        emit Approval(owner, spender, value);
-    }
-
-    function _transfer(address from, address to, uint value) private {
+    function _transfer(address from, address to, uint value, bytes memory data) private {
         balanceOf[from] = balanceOf[from].sub(value);
         balanceOf[to] = balanceOf[to].add(value);
+        
+        if(to.isContract())
+        {
+            IERC223Recipient(to).tokenReceived(from, value, data);
+        }
+        
         emit Transfer(from, to, value);
-    }
-
-    function approve(address spender, uint value) external returns (bool) {
-        _approve(msg.sender, spender, value);
-        return true;
+        emit TransferData(data);
     }
 
     function transfer(address to, uint value) external returns (bool) {
-        _transfer(msg.sender, to, value);
+        bytes memory _empty = hex"00000000";
+        _transfer(msg.sender, to, value, _empty);
         return true;
     }
 
-    function transferFrom(address from, address to, uint value) external returns (bool) {
-        if (allowance[from][msg.sender] != uint(-1)) {
-            allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);
-        }
-        _transfer(from, to, value);
+    function transfer(address to, uint value, bytes calldata data) external returns (bool) {
+        _transfer(msg.sender, to, value, data);
         return true;
-    }
-
-    function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external {
-        require(deadline >= block.timestamp, 'SoyFinance: EXPIRED');
-        bytes32 digest = keccak256(
-            abi.encodePacked(
-                '\x19\x01',
-                DOMAIN_SEPARATOR,
-                keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, value, nonces[owner]++, deadline))
-            )
-        );
-        address recoveredAddress = ecrecover(digest, v, r, s);
-        require(recoveredAddress != address(0) && recoveredAddress == owner, 'SoyFinance: INVALID_SIGNATURE');
-        _approve(owner, spender, value);
     }
 }
 
@@ -258,7 +253,7 @@ interface ISoyFinanceCallee {
     function soyFinanceCall(address sender, uint amount0, uint amount1, bytes calldata data) external;
 }
 
-contract SoyFinancePair is ISoyFinancePair, SoyFinanceERC20 {
+contract SoyFinancePair is ISoyFinancePair, SoyFinanceERC223 {
     using SafeMath  for uint;
     using UQ112x112 for uint224;
 
