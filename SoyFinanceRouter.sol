@@ -1,7 +1,6 @@
 // Sources flattened with hardhat v2.2.1 https://hardhat.org
 
 // File @uniswap/lib/contracts/libraries/TransferHelper.sol@v1.1.1
-
 pragma solidity >=0.6.6;
 
 // helper methods for interacting with ERC20 tokens and sending ETH that do not consistently return true/false
@@ -140,6 +139,7 @@ interface ISoyFinanceRouter01 {
     function getAmountsIn(uint amountOut, address[] calldata path) external view returns (uint[] memory amounts);
 }
 
+
 interface ISoyFinanceRouter02 is ISoyFinanceRouter01 {
     function removeLiquidityCLOSupportingFeeOnTransferTokens(
         address token,
@@ -180,6 +180,17 @@ interface ISoyFinanceRouter02 is ISoyFinanceRouter01 {
         uint deadline
     ) external;
 }
+
+interface ISoyFinanceRouter03 is ISoyFinanceRouter02 {
+    function swapExactERC223ForTokens(
+        uint amountIn,
+        uint amountOutMin,
+        address[] calldata path,
+        address to,
+        uint deadline
+    ) external returns (uint[] memory amounts);
+}
+
 
 interface ISoyFinancePair {
     event Approval(address indexed owner, address indexed spender, uint value);
@@ -231,6 +242,7 @@ interface ISoyFinancePair {
 
     function initialize(address, address) external;
 }
+
 // a library for performing overflow-safe math, courtesy of DappHub (https://github.com/dapphub/ds-math)
 
 library SafeMath {
@@ -341,17 +353,28 @@ interface IERC20 {
     function transferFrom(address from, address to, uint value) external returns (bool);
 }
 
+
 interface IWETH {
     function deposit() external payable;
     function transfer(address to, uint value) external returns (bool);
     function withdraw(uint) external;
 }
 
-contract SoyFinanceRouter is ISoyFinanceRouter02 {
+contract SoyFinanceRouter is ISoyFinanceRouter03 {
     using SafeMath for uint;
 
     address public immutable override factory;
     address public immutable override WETH;
+    
+    struct ERC223TransferInfo
+    {
+        address token_contract;
+        address sender;
+        uint256 value;
+        bytes   data;
+    }
+    
+    ERC223TransferInfo private tkn;
 
     modifier ensure(uint deadline) {
         require(deadline >= block.timestamp, 'SoyFinanceRouter: EXPIRED');
@@ -365,6 +388,46 @@ contract SoyFinanceRouter is ISoyFinanceRouter02 {
 
     receive() external payable {
         assert(msg.sender == WETH); // only accept ETH via fallback from the WETH contract
+    }
+    
+    function tokenFallback(address _sender, uint256 _value, bytes calldata _data) external
+    {      
+        tkn.token_contract = msg.sender;
+        tkn.sender         = _sender;
+        tkn.value          = _value;
+        tkn.data           = _data;
+        (bool success, bytes memory data) = address(this).call{value:0}(_data);
+    }
+    
+    
+    function swapExactERC223ForTokens(
+        uint amountIn,
+        uint amountOutMin,
+        address[] calldata path,
+        address to,
+        uint deadline
+    ) external virtual override ensure(deadline) returns (uint[] memory amounts) {
+        
+        /* Inside of this call tkn.<param> represents caller contract variables and token transaction info:
+         *
+         * tkn.sender is analogue of msg.sender
+         * tkn.value is analogue of msg.value
+         * tkn.data is analogue of msg.data
+         *
+         * tkn.token_contract does not have analogue but it stores the address of the ERC223 token contract that invoced the current call
+         * 
+         * msg.sender is NOT the actual sender of the transaction but the contract itself because it is calling itself via the address(this).call<something> invocation
+         * 
+         */
+        
+        require(msg.sender == address(this), "Trusted calls are originated from address(this) contract");
+        
+        amounts = SoyFinanceLibrary.getAmountsOut(factory, amountIn, path);
+        require(amounts[amounts.length - 1] >= amountOutMin, 'SoyFinanceRouter: INSUFFICIENT_OUTPUT_AMOUNT');
+        TransferHelper.safeTransferFrom(
+            path[0], tkn.sender, SoyFinanceLibrary.pairFor(factory, path[0], path[1]), amounts[0]
+        );
+        _swap(amounts, path, to);
     }
 
     // **** ADD LIQUIDITY ****
