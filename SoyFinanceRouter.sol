@@ -1,6 +1,7 @@
 // Sources flattened with hardhat v2.2.1 https://hardhat.org
 
 // File @uniswap/lib/contracts/libraries/TransferHelper.sol@v1.1.1
+
 pragma solidity >=0.6.6;
 
 // helper methods for interacting with ERC20 tokens and sending ETH that do not consistently return true/false
@@ -139,7 +140,6 @@ interface ISoyFinanceRouter01 {
     function getAmountsIn(uint amountOut, address[] calldata path) external view returns (uint[] memory amounts);
 }
 
-
 interface ISoyFinanceRouter02 is ISoyFinanceRouter01 {
     function removeLiquidityCLOSupportingFeeOnTransferTokens(
         address token,
@@ -191,7 +191,6 @@ interface ISoyFinanceRouter03 is ISoyFinanceRouter02 {
     ) external returns (uint[] memory amounts);
 }
 
-
 interface ISoyFinancePair {
     event Approval(address indexed owner, address indexed spender, uint value);
     event Transfer(address indexed from, address indexed to, uint value);
@@ -242,7 +241,6 @@ interface ISoyFinancePair {
 
     function initialize(address, address) external;
 }
-
 // a library for performing overflow-safe math, courtesy of DappHub (https://github.com/dapphub/ds-math)
 
 library SafeMath {
@@ -353,7 +351,6 @@ interface IERC20 {
     function transferFrom(address from, address to, uint value) external returns (bool);
 }
 
-
 interface IWETH {
     function deposit() external payable;
     function transfer(address to, uint value) external returns (bool);
@@ -365,6 +362,7 @@ contract SoyFinanceRouter is ISoyFinanceRouter03 {
 
     address public immutable override factory;
     address public immutable override WETH;
+    
     
     struct ERC223TransferInfo
     {
@@ -384,19 +382,6 @@ contract SoyFinanceRouter is ISoyFinanceRouter03 {
     constructor(address _factory, address _WETH) public {
         factory = _factory;
         WETH = _WETH;
-    }
-
-    receive() external payable {
-        assert(msg.sender == WETH); // only accept ETH via fallback from the WETH contract
-    }
-    
-    function tokenFallback(address _sender, uint256 _value, bytes calldata _data) external
-    {      
-        tkn.token_contract = msg.sender;
-        tkn.sender         = _sender;
-        tkn.value          = _value;
-        tkn.data           = _data;
-        (bool success, bytes memory data) = address(this).call{value:0}(_data);
     }
     
     
@@ -428,6 +413,20 @@ contract SoyFinanceRouter is ISoyFinanceRouter03 {
             path[0], tkn.sender, SoyFinanceLibrary.pairFor(factory, path[0], path[1]), amounts[0]
         );
         _swap(amounts, path, to);
+    }
+    
+    function tokenReceived(address _sender, uint256 _value, bytes calldata _data) external
+    {      
+        tkn.token_contract = msg.sender;
+        tkn.sender         = _sender;
+        tkn.value          = _value;
+        tkn.data           = _data;
+        (bool success, bytes memory data) = address(this).call{value:0}(_data);
+        require(success, "ERC223 internal call failed");
+    }
+
+    receive() external payable {
+        assert(msg.sender == WETH); // only accept ETH via fallback from the WETH contract
     }
 
     // **** ADD LIQUIDITY ****
