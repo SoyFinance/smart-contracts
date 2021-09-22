@@ -363,6 +363,7 @@ contract SoyFinanceRouter is ISoyFinanceRouter03 {
     address public immutable override factory;
     address public immutable override WETH;
     
+    //============ ERC223 variables ===============//
     
     struct ERC223TransferInfo
     {
@@ -373,6 +374,15 @@ contract SoyFinanceRouter is ISoyFinanceRouter03 {
     }
     
     ERC223TransferInfo private tkn;
+    uint8 private token_unlocked = 1;
+    
+    modifier token_lock() {
+        require(token_unlocked == 1, 'SoyFinance: TOKEN REENTRANCY DETECTED');
+        token_unlocked = 0;
+        _;
+        token_unlocked = 1;
+    }
+    //============ ============== ===============//
 
     modifier ensure(uint deadline) {
         require(deadline >= block.timestamp, 'SoyFinanceRouter: EXPIRED');
@@ -396,8 +406,8 @@ contract SoyFinanceRouter is ISoyFinanceRouter03 {
         /* Inside of this call tkn.<param> represents caller contract variables and token transaction info:
          *
          * tkn.sender is analogue of msg.sender
-         * tkn.value is analogue of msg.value
-         * tkn.data is analogue of msg.data
+         * tkn.value  is analogue of msg.value
+         * tkn.data   is analogue of msg.data
          *
          * tkn.token_contract does not have analogue but it stores the address of the ERC223 token contract that invoced the current call
          * 
@@ -415,7 +425,7 @@ contract SoyFinanceRouter is ISoyFinanceRouter03 {
         _swap(amounts, path, to);
     }
     
-    function tokenReceived(address _sender, uint256 _value, bytes calldata _data) external
+    function tokenReceived(address _sender, uint256 _value, bytes calldata _data) external token_lock()
     {      
         tkn.token_contract = msg.sender;
         tkn.sender         = _sender;
