@@ -140,6 +140,15 @@ contract  SoyFinanceERC223 is ISoyFinanceERC223 {
     
     event Transfer(address indexed from, address indexed to, uint value);
 
+    uint private token_unlocked = 1;
+    modifier token_lock() {
+        require(token_unlocked == 1, 'SoyFinance: TOKEN REENTRANCY DETECTED');
+        token_unlocked = 0;
+        _;
+        token_unlocked = 1;
+    }
+
+
     constructor() public {
         uint chainId;
         assembly {
@@ -168,7 +177,7 @@ contract  SoyFinanceERC223 is ISoyFinanceERC223 {
         emit Transfer(from, address(0), value);
     }
 
-    function _transfer(address from, address to, uint value, bytes memory data) private {
+    function _transfer(address from, address to, uint value, bytes memory data) private token_lock() {
         balanceOf[from] = balanceOf[from].sub(value);
         balanceOf[to] = balanceOf[to].add(value);
         
