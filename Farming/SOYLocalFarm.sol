@@ -152,6 +152,8 @@ abstract contract RewardsRecipient {
 
 interface IGlobalFarm {
     function mintFarmingReward(address _localFarm, uint256 _period) external;
+    function getAllocation(address _farm) external view returns (uint256);
+    function getRewardPerSecond() external view returns (uint256);
 }
 
 // Inheritancea
@@ -165,35 +167,67 @@ contract SOYLocalFarm is IERC223Recipient, ReentrancyGuard, RewardsRecipient
 
     event RewardAdded(uint256 reward);
     event Staked(address indexed user, uint256 amount);
-    event Withdrawn(address indexed user, uint256 amount);
+    event Withdraw(address indexed user, uint256 amount);
+    event EmergencyWithdraw(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, uint256 reward);
     
     
     /* ========== VARIABLES ========== */
+
+    struct UserInfo {
+        uint256 amount;     // How many LP tokens the user has provided.
+        uint256 rewardDebt; // Reward debt. See explanation below.
+    }
+    // Info of each user that stakes LP tokens.
+    mapping (address => UserInfo) public userInfo;
+    
+    uint256 public activeEpoch;
+    
+    uint256 public limitAmount = 100000 * 1e18; // Check correctness!
     
     IERC223 public rewardsToken;
-    IERC223 public stakingToken;
+    IERC223 public lpToken;
     
-    
+    //uint256 allocPoint;       // How many allocation points assigned to this  CAKEs to distribute per block.
+    uint256 public lastRewardTimestamp;  // Last block number that CAKEs distribution occurs.
+    uint256 public accumulatedRewardPerShare; // Accumulated CAKEs per share, times 1e12. See below.
 
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
         address _rewardsDistribution,   // GlobalFarm contract
         address _rewardsToken,          // SOY token
-        address _stakingToken           // LP token that will be staked in this Local Farm
+        address _lpToken           // LP token that will be staked in this Local Farm
     )
     {
         rewardsToken        = IERC223(_rewardsToken);
-        stakingToken        = IERC223(_stakingToken);
+        lpToken             = IERC223(_lpToken);
         globalFarm          = _rewardsDistribution;
     }
     
     /* ========== ERC223 transaction handlers ====== */
     
+    // Analogue of deposit() function.
     function tokenReceived(address _from, uint256 _amount, bytes memory _data) public override
     {
         _data; // Stupid warning silencer.
+        
+        require(msg.sender == address(lpToken), "Trying to deposit wrong token");
+        
+        UserInfo storage user = userInfo[msg.sender];
+        require(user.amount + _amount <= limitAmount, 'exceed the top');
+
+        update;
+        if (user.amount > 0) {
+            uint256 pending = user.amount * accumulatedRewardPerShare / 1e18 - user.rewardDebt;
+            if(pending > 0) {
+                rewardsToken.transfer(address(msg.sender), pending);
+            }
+        }
+        if(_amount > 0) {
+            user.amount += _amount;
+        }
+        user.rewardDebt = user.amount * accumulatedRewardPerShare / 1e18;
         
         emit Staked(_from, _amount);
     }
@@ -203,4 +237,86 @@ contract SOYLocalFarm is IERC223Recipient, ReentrancyGuard, RewardsRecipient
     {
         
     }
+    
+    function getRewardPerSecond() public view returns (uint256)
+    {
+        return IGlobalFarm(globalFarm).getAllocation(address(this));
+    }
+    
+    function getAllocation() public view returns (uint256)
+    {
+        return IGlobalFarm(globalFarm).getAllocation(address(this));
+    }
+    
+    /* ========== Farm Functions ====== */
+
+    // View function to see pending Reward on frontend.
+    function pendingReward(address _user) external view returns (uint256) {
+        UserInfo storage user = userInfo[_user];
+        uint256 _accumulatedRewardPerShare = accumulatedRewardPerShare;
+        uint256 lpSupply = lpToken.balanceOf(address(this));
+        if (block.timestamp > lastRewardTimestamp && lpSupply != 0) {
+            uint256 multiplier = block.timestamp - lastRewardTimestamp;
+            uint256 _reward = multiplier * getRewardPerSecond() * getAllocation();
+            //accumulatedRewardPerShare = accCakePerShare.add(cakeReward.mul(1e12).div(lpSupply));
+            
+            _accumulatedRewardPerShare = accumulatedRewardPerShare + (_reward * 1e18 / lpSupply);
+        }
+        return user.amount * _accumulatedRewardPerShare / 1e18 - user.rewardDebt;
+    }
+    
+    
+
+    // Update reward variables of this Local Farm to be up-to-date.
+    function update() public {
+        if (block.timestamp <= lastRewardTimestamp) {
+            return;
+        }
+        uint256 lpSupply = lpToken.balanceOf(address(this));
+        if (lpSupply == 0) {
+            lastRewardTimestamp = block.timestamp;
+            return;
+        }
+        uint256 multiplier = block.timestamp - lastRewardTimestamp;
+        uint256 _reward = multiplier * getRewardPerSecond() * getAllocation();
+        accumulatedRewardPerShare = accumulatedRewardPerShare + (_reward * 1e18 / lpSupply);
+        lastRewardTimestamp = block.timestamp;
+    }
+    
+    
+
+    // Withdraw tokens from STAKING.
+    function withdraw(uint256 _amount) public {
+        UserInfo storage user = userInfo[msg.sender];
+        require(user.amount >= _amount, "withdraw: not good");
+        update;
+        uint256 pending = user.amount * accumulatedRewardPerShare / 1e18 - user.rewardDebt;
+        if(pending > 0) {
+            rewardsToken.transfer(address(msg.sender), pending);
+        }
+        if(_amount > 0) {
+            user.amount = user.amount - _amount;
+            lpToken.transfer(address(msg.sender), _amount);
+        }
+        user.rewardDebt = user.amount * accumulatedRewardPerShare / 1e18;
+
+        emit Withdraw(msg.sender, _amount);
+    }
+
+    // Withdraw without caring about rewards. EMERGENCY ONLY.
+    function emergencyWithdraw() public {
+        UserInfo storage user = userInfo[msg.sender];
+        lpToken.transfer(address(msg.sender), user.amount);
+        emit EmergencyWithdraw(msg.sender, user.amount);
+        user.amount = 0;
+        user.rewardDebt = 0;
+    }
+
+/*
+    // Withdraw reward. EMERGENCY ONLY.
+    function emergencyRewardWithdraw(uint256 _amount) public onlyOwner {
+        require(_amount < rewardToken.balanceOf(address(this)), 'not enough token');
+        rewardsToken.transfer(address(msg.sender), _amount);
+    }
+    */
 }
