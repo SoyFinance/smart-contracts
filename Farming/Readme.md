@@ -34,9 +34,9 @@
 
 #### Test Global Farm contract
 
-- address 0xB70eE063707Be14ADcada78564C73040874beB26
+- address 0x04976B08fd9ffC95E972A99f338ecCCA4e3E6B08
 
-- link https://explorer.callisto.network/address/0xB70eE063707Be14ADcada78564C73040874beB26/transactions
+- link https://explorer.callisto.network/address/0x04976B08fd9ffC95E972A99f338ecCCA4e3E6B08/transactions
 
 #### Test Local Farm contract supporting TestSOY223 as rewardToken
 
