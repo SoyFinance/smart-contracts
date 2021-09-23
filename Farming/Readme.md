@@ -28,9 +28,9 @@
 
 #### Test LP 223 token
 
-- address 0x01C5965206d26d4391148570636D3F74b5704E4D
+- address 0xF5d88D396Fc807F929336656D3018619d492A0f3
 
-- link https://explorer.callisto.network/address/0x01C5965206d26d4391148570636D3F74b5704E4D/transactions
+- link https://explorer.callisto.network/address/0xF5d88D396Fc807F929336656D3018619d492A0f3/transactions
 
 #### Test Global Farm contract
 
