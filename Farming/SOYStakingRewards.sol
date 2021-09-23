@@ -311,7 +311,7 @@ contract StakingRewards is IERC223Recipient, IStakingRewards, RewardsDistributio
         {
             uint256 remaining = periodFinish - block.timestamp;
             uint256 leftover  = remaining * rewardRate;
-            rewardRate        = reward + leftover / rewardsDuration;
+            rewardRate        = (reward + leftover) / rewardsDuration;
         }
 
         // Ensure the provided reward amount is not more than the balance in the contract.
