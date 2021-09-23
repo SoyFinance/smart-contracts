@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: No License (None)
 
-pragma solidity 0.6.12;
+pragma solidity 0.8.0;
 
 abstract contract IERC223Recipient { 
 /**
@@ -10,7 +10,7 @@ abstract contract IERC223Recipient {
  * @param _value Amount of tokens.
  * @param _data  Transaction metadata.
  */
-    function tokenFallback(address _from, uint _value, bytes memory _data) external virtual returns (bool);
+    function tokenReceived(address _from, uint _value, bytes memory _data) external virtual returns (bool);
 }
 
 /*
@@ -25,7 +25,7 @@ abstract contract IERC223Recipient {
  */
 abstract contract Context {
     function _msgSender() internal view virtual returns (address payable) {
-        return msg.sender;
+        return payable(msg.sender);
     }
 
     function _msgData() internal view virtual returns (bytes memory) {
@@ -470,7 +470,6 @@ library Address {
  * allowances. See {IERC20-approve}.
  */
 contract ERC223 is Context, IERC223, MinterDebugging {
-    using SafeMath for uint256;
     using Address for address;
 
     mapping (address => uint256) private _balances;
@@ -492,9 +491,9 @@ contract ERC223 is Context, IERC223, MinterDebugging {
      * All three of these values are immutable: they can only be set once during
      * construction.
      */
-    constructor (string memory name, string memory symbol) public {
-        _name = name;
-        _symbol = symbol;
+    constructor (string memory new_name, string memory new_symbol) {
+        _name = new_name;
+        _symbol = new_symbol;
         _decimals = 18;
     }
 
@@ -604,7 +603,7 @@ contract ERC223 is Context, IERC223, MinterDebugging {
      */
     function transferFrom(address sender, address recipient, uint256 amount) public virtual override returns (bool) {
         _transferFrom(sender, recipient, amount);
-        _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, "ERC20: transfer amount exceeds allowance"));
+        _approve(sender, _msgSender(), _allowances[sender][_msgSender()] - amount);
         return true;
     }
 
@@ -621,7 +620,7 @@ contract ERC223 is Context, IERC223, MinterDebugging {
      * - `spender` cannot be the zero address.
      */
     function increaseAllowance(address spender, uint256 addedValue) public virtual returns (bool) {
-        _approve(_msgSender(), spender, _allowances[_msgSender()][spender].add(addedValue));
+        _approve(_msgSender(), spender, _allowances[_msgSender()][spender] + addedValue);
         return true;
     }
 
@@ -640,7 +639,7 @@ contract ERC223 is Context, IERC223, MinterDebugging {
      * `subtractedValue`.
      */
     function decreaseAllowance(address spender, uint256 subtractedValue) public virtual returns (bool) {
-        _approve(_msgSender(), spender, _allowances[_msgSender()][spender].sub(subtractedValue, "ERC20: decreased allowance below zero"));
+        _approve(_msgSender(), spender, _allowances[_msgSender()][spender] - subtractedValue);
         return true;
     }
 
@@ -666,11 +665,11 @@ contract ERC223 is Context, IERC223, MinterDebugging {
         
         if(recipient.isContract())
         {
-            IERC223Recipient(recipient).tokenFallback(sender, amount, data);
+            IERC223Recipient(recipient).tokenReceived(sender, amount, data);
         }
 
-        _balances[sender] = _balances[sender].sub(amount, "ERC223: transfer amount exceeds balance");
-        _balances[recipient] = _balances[recipient].add(amount);
+        _balances[sender] = _balances[sender] - amount;
+        _balances[recipient] = _balances[recipient] + amount;
         emit Transfer(sender, recipient, amount);
     }
     
@@ -680,8 +679,8 @@ contract ERC223 is Context, IERC223, MinterDebugging {
 
         _beforeTokenTransfer(sender, recipient, amount);
         
-        _balances[sender] = _balances[sender].sub(amount, "ERC223: transfer amount exceeds balance");
-        _balances[recipient] = _balances[recipient].add(amount);
+        _balances[sender] = _balances[sender] - amount;
+        _balances[recipient] = _balances[recipient] + amount;
         emit Transfer(sender, recipient, amount);
     }
 
@@ -699,8 +698,8 @@ contract ERC223 is Context, IERC223, MinterDebugging {
 
         _beforeTokenTransfer(address(0), account, amount);
 
-        _totalSupply = _totalSupply.add(amount);
-        _balances[account] = _balances[account].add(amount);
+        _totalSupply += amount;
+        _balances[account] += amount;
         emit Transfer(address(0), account, amount);
     }
 
@@ -720,8 +719,8 @@ contract ERC223 is Context, IERC223, MinterDebugging {
 
         _beforeTokenTransfer(account, address(0), amount);
 
-        _balances[account] = _balances[account].sub(amount, "ERC20: burn amount exceeds balance");
-        _totalSupply = _totalSupply.sub(amount);
+        _balances[account] -= amount;
+        _totalSupply -= amount;
         emit Transfer(account, address(0), amount);
     }
 
@@ -891,7 +890,7 @@ contract SoyToken is ERC223("SOY Finance token", "SOY"), Ownable {
     event DelegateVotesChanged(address indexed delegate, uint previousBalance, uint newBalance);
     
     
-    constructor() public {
+    constructor() {
         address msgSender = _msgSender();
         _owner = 0x6A56D0f7498C9f2AEb9Bb6892Ade5b2E0A50379F;  // Hardcoded the address of the OWNER MULTISIG of Callisto team on CLO chain (820 id)
         _mint(msg.sender, 120000000 * 10 ** 18);
@@ -977,7 +976,7 @@ contract SoyToken is ERC223("SOY Finance token", "SOY"), Ownable {
         address signatory = ecrecover(digest, v, r, s);
         require(signatory != address(0), "SOY::delegateBySig: invalid signature");
         require(nonce == nonces[signatory]++, "SOY::delegateBySig: invalid nonce");
-        require(now <= expiry, "SOY::delegateBySig: signature expired");
+        require(block.timestamp <= expiry, "SOY::delegateBySig: signature expired");
         return _delegate(signatory, delegatee);
     }
 
@@ -1058,7 +1057,7 @@ contract SoyToken is ERC223("SOY Finance token", "SOY"), Ownable {
                 // decrease old representative
                 uint32 srcRepNum = numCheckpoints[srcRep];
                 uint256 srcRepOld = srcRepNum > 0 ? checkpoints[srcRep][srcRepNum - 1].votes : 0;
-                uint256 srcRepNew = srcRepOld.sub(amount);
+                uint256 srcRepNew = srcRepOld - amount;
                 _writeCheckpoint(srcRep, srcRepNum, srcRepOld, srcRepNew);
             }
 
@@ -1066,7 +1065,7 @@ contract SoyToken is ERC223("SOY Finance token", "SOY"), Ownable {
                 // increase new representative
                 uint32 dstRepNum = numCheckpoints[dstRep];
                 uint256 dstRepOld = dstRepNum > 0 ? checkpoints[dstRep][dstRepNum - 1].votes : 0;
-                uint256 dstRepNew = dstRepOld.add(amount);
+                uint256 dstRepNew = dstRepOld + amount;
                 _writeCheckpoint(dstRep, dstRepNum, dstRepOld, dstRepNew);
             }
         }
@@ -1097,7 +1096,7 @@ contract SoyToken is ERC223("SOY Finance token", "SOY"), Ownable {
         return uint32(n);
     }
 
-    function getChainId() internal pure returns (uint) {
+    function getChainId() internal view returns (uint) {
         uint256 chainId;
         assembly { chainId := chainid() }
         return chainId;
