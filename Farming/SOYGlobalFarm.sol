@@ -1,6 +1,129 @@
 // SPDX-License-Identifier: No License (None)
 pragma solidity ^0.8.0;
 
+
+
+/**
+ * @dev Standard math utilities missing in the Solidity language.
+ */
+library Math {
+    /**
+     * @dev Returns the largest of two numbers.
+     */
+    function max(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a >= b ? a : b;
+    }
+
+    /**
+     * @dev Returns the smallest of two numbers.
+     */
+    function min(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a < b ? a : b;
+    }
+
+    /**
+     * @dev Returns the average of two numbers. The result is rounded towards
+     * zero.
+     */
+    function average(uint256 a, uint256 b) internal pure returns (uint256) {
+        // (a + b) / 2 can overflow.
+        return (a & b) + (a ^ b) / 2;
+    }
+
+    /**
+     * @dev Returns the ceiling of the division of two numbers.
+     *
+     * This differs from standard division with `/` in that it rounds up instead
+     * of rounding down.
+     */
+    function ceilDiv(uint256 a, uint256 b) internal pure returns (uint256) {
+        // (a + b - 1) / b can overflow on addition, so we distribute.
+        return a / b + (a % b == 0 ? 0 : 1);
+    }
+}
+
+
+/**
+ * @title Counters
+ * @author Matt Condon (@shrugs)
+ * @dev Provides counters that can only be incremented, decremented or reset. This can be used e.g. to track the number
+ * of elements in a mapping, issuing ERC721 ids, or counting request ids.
+ *
+ * Include with `using Counters for Counters.Counter;`
+ */
+library Counters {
+    struct Counter {
+        // This variable should never be directly accessed by users of the library: interactions must be restricted to
+        // the library's function. As of Solidity v0.5.2, this cannot be enforced, though there is a proposal to add
+        // this feature: see https://github.com/ethereum/solidity/issues/4637
+        uint256 _value; // default: 0
+    }
+
+    function current(Counter storage counter) internal view returns (uint256) {
+        return counter._value;
+    }
+
+    function increment(Counter storage counter) internal {
+        unchecked {
+            counter._value += 1;
+        }
+    }
+
+    function decrement(Counter storage counter) internal {
+        uint256 value = counter._value;
+        require(value > 0, "Counter: decrement overflow");
+        unchecked {
+            counter._value = value - 1;
+        }
+    }
+
+    function reset(Counter storage counter) internal {
+        counter._value = 0;
+    }
+}
+
+/**
+ * @dev Collection of functions related to array types.
+ */
+library Arrays {
+    /**
+     * @dev Searches a sorted `array` and returns the first index that contains
+     * a value greater or equal to `element`. If no such index exists (i.e. all
+     * values in the array are strictly less than `element`), the array length is
+     * returned. Time complexity O(log n).
+     *
+     * `array` is expected to be sorted in ascending order, and to contain no
+     * repeated elements.
+     */
+    function findUpperBound(uint256[] storage array, uint256 element) internal view returns (uint256) {
+        if (array.length == 0) {
+            return 0;
+        }
+
+        uint256 low = 0;
+        uint256 high = array.length;
+
+        while (low < high) {
+            uint256 mid = Math.average(low, high);
+
+            // Note that mid will always be strictly less than high (i.e. it will be a valid array index)
+            // because Math.average rounds down (it does integer division with truncation).
+            if (array[mid] > element) {
+                high = mid;
+            } else {
+                low = mid + 1;
+            }
+        }
+
+        // At this point `low` is the exclusive upper bound. We will return the inclusive upper bound.
+        if (low > 0 && array[low - 1] == element) {
+            return low - 1;
+        } else {
+            return low;
+        }
+    }
+}
+
 /**
  * @title Ownable
  * @dev The Ownable contract has an owner address, and provides basic authorization control
@@ -87,6 +210,9 @@ interface ILocalFarm {
 
 contract GlobalFarm is Ownable {
     
+    using Arrays for uint256[];
+    using Counters for Counters.Counter;
+    
     struct LocalFarm {
         address farmAddress;
         uint32  multiplier;
@@ -98,6 +224,19 @@ contract GlobalFarm is Ownable {
         uint256 start;
         uint256 end;
     }
+
+    // Snapshotted values have arrays of ids and the value corresponding to that id. These could be an array of a
+    // Snapshot struct, but that would impede usage of functions that work on an array.
+    struct Snapshots {
+        uint256[] ids;
+        uint256[] values;
+    }
+    
+    mapping(address => Snapshots) private _farmMultiplierSnapshot;
+    Snapshots private _totalMultipliersSnapshot;
+
+    // Snapshot ids increase monotonically, with the first value being 1. An id of 0 is invalid.
+    Counters.Counter private _currentSnapshotId;
     
     IMintableToken public rewardsToken;                 // SOY token
     uint256 public tokensPerYear  = 50 * 10**6 * 10*18;  // 50M tokens
@@ -121,6 +260,81 @@ contract GlobalFarm is Ownable {
     constructor (address _rewardsToken) {
         rewardsToken = IMintableToken(_rewardsToken);
     }
+    
+    // ======== Snapshotting ============ //
+    
+    
+    /**
+     * @dev Creates a new snapshot and returns its snapshot id.
+     *
+     * Emits a {Snapshot} event that contains the same id.
+     *
+     * {_snapshot} is `internal` and you have to decide how to expose it externally. Its usage may be restricted to a
+     * set of accounts, for example using {AccessControl}, or it may be open to the public.
+     *
+     * [WARNING]
+     * ====
+     * While an open way of calling {_snapshot} is required for certain trust minimization mechanisms such as forking,
+     * you must consider that it can potentially be used by attackers in two ways.
+     *
+     * First, it can be used to increase the cost of retrieval of values from snapshots, although it will grow
+     * logarithmically thus rendering this attack ineffective in the long term. Second, it can be used to target
+     * specific accounts and increase the cost of ERC223 transfers for them, in the ways specified in the Gas Costs
+     * section above.
+     *
+     * We haven't measured the actual numbers; if this is something you're interested in please reach out to us.
+     * ====
+     */
+    function _snapshot() internal virtual returns (uint256) {
+        _currentSnapshotId.increment();
+
+        uint256 currentId = getCurrentSnapshotId();
+        return currentId;
+    }
+    
+    function getCurrentSnapshotId() public view returns (uint256) {
+        return _currentSnapshotId.current();
+    }
+    
+    function farmMultiplierAt(address _localFarmAddress, uint256 _snapshotId) public view virtual returns (uint256) {
+        (bool snapshotted, uint256 value) = _valueAt(_snapshotId, _farmMultiplierSnapshot[_localFarmAddress]);
+
+        return snapshotted ? value : localFarms[localFarmId[_localFarmAddress]].multiplier;
+    }
+
+    function _valueAt(uint256 snapshotId, Snapshots storage snapshots) private view returns (bool, uint256) {
+        require(snapshotId > 0, "Snapshot id is 0");
+        require(snapshotId <= getCurrentSnapshotId(), "Nonexistent id");
+
+        // When a valid snapshot is queried, there are three possibilities:
+        //  a) The queried value was not modified after the snapshot was taken. Therefore, a snapshot entry was never
+        //  created for this id, and all stored snapshot ids are smaller than the requested one. The value that corresponds
+        //  to this id is the current one.
+        //  b) The queried value was modified after the snapshot was taken. Therefore, there will be an entry with the
+        //  requested id, and its value is the one to return.
+        //  c) More snapshots were created after the requested one, and the queried value was later modified. There will be
+        //  no entry for the requested id: the value that corresponds to it is that of the smallest snapshot id that is
+        //  larger than the requested one.
+        //
+        // In summary, we need to find an element in an array, returning the index of the smallest value that is larger if
+        // it is not found, unless said value doesn't exist (e.g. when all values are smaller). Arrays.findUpperBound does
+        // exactly this.
+
+        uint256 index = snapshots.ids.findUpperBound(snapshotId);
+
+        if (index == snapshots.ids.length) {
+            return (false, 0);
+        } else {
+            return (true, snapshots.values[index]);
+        }
+    }
+    
+    function totalMultipliersAt(uint256 snapshotId) public view virtual returns (uint256) {
+        (bool snapshotted, uint256 value) = _valueAt(snapshotId, _totalMultipliersSnapshot);
+
+        return snapshotted ? value : totalMultipliers;
+    }
+    // ======== ============ =============== //
     
     function today_zero_timestamp() public view returns (uint256)
     {
@@ -207,6 +421,7 @@ contract GlobalFarm is Ownable {
         uint32 oldMultiplier = localFarms[localFarmId[_localFarmAddress]].multiplier;
         totalMultipliers = totalMultipliers + uint256(_multiplier) - uint256(oldMultiplier); // update totalMultipliers
         localFarms[localFarmId[_localFarmAddress]].multiplier = _multiplier;
+        
         emit ChangeMultiplier(_localFarmAddress, oldMultiplier, _multiplier);
     }
 
