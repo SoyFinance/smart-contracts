@@ -40,6 +40,8 @@
 
 #### Test Local Farm contract supporting TestSOY223 as rewardToken
 
-- address 0xe03Db33365Fe239cF3C176a27c6f0C05BD49F681
+- Modifications: for testing reasons removed `onlyRewardsDistribution` modifier and set `rewardDuration = 1 min`
 
-- link https://explorer.callisto.network/address/0xe03Db33365Fe239cF3C176a27c6f0C05BD49F681/transactions
+- address 0x5FDDEe2a9a9cc5871a180931617807C3b8214200
+
+- link https://explorer.callisto.network/address/0x5FDDEe2a9a9cc5871a180931617807C3b8214200/transactions
