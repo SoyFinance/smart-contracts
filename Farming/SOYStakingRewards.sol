@@ -80,7 +80,7 @@ abstract contract IERC223Recipient {
  * @param _value Amount of tokens.
  * @param _data  Transaction metadata.
  */
-    function tokenReceived(address _from, uint _value, bytes memory _data) public virtual;
+    function tokenReceived(address _from, uint _value, bytes calldata _data) public virtual;
 }
 
 
@@ -181,7 +181,7 @@ contract StakingRewards is IERC223Recipient, IStakingRewards, RewardsDistributio
     
     uint256 public periodFinish    = 0;
     uint256 public rewardRate      = 0;
-    uint256 public rewardsDuration = 1 minutes;
+    uint256 public rewardsDuration = 1 days;
     uint256 public lastUpdateTime;
     uint256 public rewardPerTokenStored;
 
@@ -210,8 +210,8 @@ contract StakingRewards is IERC223Recipient, IStakingRewards, RewardsDistributio
     {
         _data; // Stupid warning silencer.
         
-        //require(msg.sender == address(stakingToken), "Wrong token deposit reverted");
-        //require(_amount > 0, "Cannot stake 0");
+        require(msg.sender == address(stakingToken), "Wrong token deposit reverted");
+        require(_amount > 0, "Cannot stake 0");
         
         _totalFarmingSupply += _amount;
         _balances[_from]   += _amount;
