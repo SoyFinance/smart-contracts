@@ -22,9 +22,9 @@
 
 #### TestSOY223 token
 
-- address 0x79cDdFf263cd9EaF1Fc55EF678125B64183C5C2D
+- address 0xC8227f810FB2F4FacBf9D3CAbca21e47f51d87a3
 
-- link https://explorer.callisto.network/address/0x79cDdFf263cd9EaF1Fc55EF678125B64183C5C2D/transactions
+- link https://explorer.callisto.network/address/0xC8227f810FB2F4FacBf9D3CAbca21e47f51d87a3/transactions
 
 #### Test LP 223 token
 
