@@ -93,10 +93,17 @@ contract GlobalFarm is Ownable {
         uint256 lastMintTimestamp;
     }
     
+    struct Epoch {
+        uint256 id;
+        uint256 start;
+        uint256 end;
+    }
+    
     IMintableToken public rewardsToken;                 // SOY token
-    uint256 public tokensPerYear = 50 * 10**6 * 10*18;  // 50M tokens
+    uint256 public tokensPerYear  = 50 * 10**6 * 10*18;  // 50M tokens
     uint256 public totalMultipliers;
     uint256 public rewardDuration = 1 days;
+    uint256 public current_epoch_id       = 0;
     //LocalFarm[] public localFarms;               // local farms list
     
     mapping(uint256 => LocalFarm) public localFarms;
@@ -113,6 +120,16 @@ contract GlobalFarm is Ownable {
 
     constructor (address _rewardsToken) {
         rewardsToken = IMintableToken(_rewardsToken);
+    }
+    
+    function today_zero_timestamp() public view returns (uint256)
+    {
+        return (block.timestamp / 1 days) * 1 days;
+    }
+    
+    function next_day_zero_timestamp() public view returns (uint256)
+    {
+        return ( (block.timestamp / 1 days) * 1 days) + 1 days;
     }
 
     function getLocalFarmId(address _localFarmAddress) external view returns (uint256) {
