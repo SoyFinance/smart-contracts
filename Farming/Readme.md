@@ -44,6 +44,6 @@
 
 - Modifications: for testing reasons removed `onlyRewardsDistribution` modifier and set `rewardDuration = 3 minutes`
 
-- address 0x6605B767DeE67a45f5a936E62d94e370a67fcC3f
+- address 0x999f7E26D9577FADD08CC6943798D12755722c99
 
-- link https://explorer.callisto.network/address/0x5FDDEe2a9a9cc5871a180931617807C3b8214200/transactions
+- link https://explorer.callisto.network/address/0x999f7E26D9577FADD08CC6943798D12755722c99/transactions
