@@ -6,6 +6,12 @@
 
 - owned by @Dexaran
 
+#### Another Test address
+
+- 0x2CA1377Dfa03577cE5bbb815C98edA1ac7632e7D
+
+- owned by @Dexaran
+
 #### TestSOY223 token
 
 - address 0x79cDdFf263cd9EaF1Fc55EF678125B64183C5C2D
