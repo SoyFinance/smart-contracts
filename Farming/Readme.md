@@ -12,6 +12,14 @@
 
 - owned by @Dexaran
 
+#### Test ERC223 Receiver
+
+- description: "Simple contract that receives ERC223 tokens and emits `Received()` event" on successful transfer.
+
+- address 0x2A70ad0238fa3f69AD195D09e70B25a93040ABF0
+
+- link https://explorer.callisto.network/address/0x2A70ad0238fa3f69AD195D09e70B25a93040ABF0/transactions
+
 #### TestSOY223 token
 
 - address 0x79cDdFf263cd9EaF1Fc55EF678125B64183C5C2D
