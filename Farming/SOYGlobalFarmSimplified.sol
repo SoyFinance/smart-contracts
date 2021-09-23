@@ -114,6 +114,17 @@ contract GlobalFarm is Ownable {
     constructor (address _rewardsToken) {
         rewardsToken = IMintableToken(_rewardsToken);
     }
+    
+    function getAllocation(address _farm) external view returns (uint256)
+    {
+        return localFarms[localFarmId[_farm]].multiplier / totalMultipliers;
+    }
+    
+    function getRewardPerSecond() external view returns (uint256)
+    {
+        // Solidity rounding is nasty
+        return tokensPerYear / (365 days * 24 * 60 * 60);
+    }
 
     function getLocalFarmId(address _localFarmAddress) external view returns (uint256) {
         return localFarmId[_localFarmAddress];
