@@ -214,7 +214,7 @@ contract StakingRewards is IERC223Recipient, IStakingRewards, RewardsDistributio
         require(_amount > 0, "Cannot stake 0");
         
         _totalFarmingSupply += _amount;
-        _balances[_from]   += _amount;
+        _balances[_from]    += _amount;
         
         emit Staked(_from, _amount);
     }
@@ -329,7 +329,7 @@ contract StakingRewards is IERC223Recipient, IStakingRewards, RewardsDistributio
             if (startNewPeriod >= periodFinish)
                 lastUpdateTime = startNewPeriod;
         }
-        periodFinish = (block.timestamp / rewardsDuration) * rewardsDuration;    // set periodFinish at 00:00 UTC
+        periodFinish = (block.timestamp / rewardsDuration) + rewardsDuration;    // set periodFinish at 00:00 UTC
         
         emit RewardAdded(reward);
     }
