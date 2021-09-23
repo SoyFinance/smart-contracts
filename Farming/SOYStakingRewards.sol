@@ -153,7 +153,7 @@ interface IStakingRewards {
 
     // Mutative
     function withdraw(uint256 amount) external;
-    function getReward()              external;
+    function claimReward()            external;
     function exit()                   external;
 }
 
@@ -286,7 +286,7 @@ contract StakingRewards is IERC223Recipient, IStakingRewards, RewardsDistributio
         emit Withdrawn(msg.sender, amount);
     }
 
-    function getReward() public override nonReentrant updateReward(msg.sender) {
+    function claimReward() public override nonReentrant updateReward(msg.sender) {
         uint256 reward = rewards[msg.sender];
         if (reward > 0) {
             rewards[msg.sender] = 0;
@@ -298,7 +298,7 @@ contract StakingRewards is IERC223Recipient, IStakingRewards, RewardsDistributio
 
     function exit() external override {
         withdraw(_balances[msg.sender]);
-        getReward();
+        claimReward();
     }
 
     /* ========== RESTRICTED FUNCTIONS ========== */
