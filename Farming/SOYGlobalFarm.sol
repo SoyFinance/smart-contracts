@@ -238,7 +238,11 @@ contract GlobalFarm is Ownable {
     uint256 public totalMultipliers;
     uint256 public rewardDuration = 1 days;
     
-    uint256 public pendingSnapshot = 0;
+    uint256 public activeSnapshotId = 1;  // Contract operates by two types of snapshots
+                                          // getCurrentSnapshotId() - returns an "internal" workaround snapshot which can store queued values
+                                          // activeSnapshotId       - returns an actual snapshot ID which can be equal to getCurrentSnapshotId()-1 if pending snapshot is not yet applied
+    
+    uint256 public pendingNextSnapshotTimestamp = 0;
     //LocalFarm[] public localFarms;               // local farms list
     
     mapping(uint256 => LocalFarm) public localFarms;
@@ -260,10 +264,11 @@ contract GlobalFarm is Ownable {
     
     function maintenance() public
     {
-        if(pendingSnapshot != 0 && pendingSnapshot < block.timestamp)
+        if(pendingNextSnapshotTimestamp != 0 && pendingNextSnapshotTimestamp < block.timestamp)
         {
-            _snapshot();
-            pendingSnapshot = 0;
+            // We only increment actual snapshot on the next day after changes were pushed to pending snapshot.
+            activeSnapshotId++;
+            pendingNextSnapshotTimestamp = 0;
         }
     }
     
@@ -345,10 +350,17 @@ contract GlobalFarm is Ownable {
     }
 
     function _updateSnapshot(Snapshots storage snapshots, uint256 currentValue) private {
+        // Whenever changes to snapshottable variables are proposed for the first time of each snapshot it creates a new "pending" snapshot
+        // _snapshot() function increments the value of "getCurrentSnapshotId"
+        // it is assumed that all related Local Farm contract operate based on actualSnapshotId which stays unchanged for 1 day since proposed changes
+        // the purpose of pending snapshots is to accumulate all proposed during one day changes and then apply them at once in the next snapshot
+        // so that to avoid creating numerous separate snapshots for every update and increasing gas costs.
+        
         // Upon updating any snapshot queue new pendingEpoch
-        if(pendingSnapshot == 0)
+        if(pendingNextSnapshotTimestamp == 0)
         {
-            pendingSnapshot = next_day_zero_timestamp();
+            pendingNextSnapshotTimestamp = next_day_zero_timestamp();
+            _snapshot();
         }
         
         uint256 currentId = getCurrentSnapshotId();
@@ -485,6 +497,9 @@ contract GlobalFarm is Ownable {
     function mintFarmingReward(address _localFarmAddress, uint256 _period) external {
         require (farmExists(_localFarmAddress), "LocalFarm with this address does not exist");
         require (_period > 0, "Cannot claim reward for a timeframe of 0 seconds");
+        
+        maintenance();
+        
         //require (nextMint[_localFarmAddress] < block.timestamp); // Can not place a "requirement" on auto-executable function.
         
         // This function can be called by EVERYONE.
