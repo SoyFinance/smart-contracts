@@ -40,6 +40,6 @@
 
 #### Test Local Farm contract supporting TestSOY223 as rewardToken
 
-- address 0xDA37856fb8Be71917DD0e1Bd81c622de92018A3D
+- address 0xe03Db33365Fe239cF3C176a27c6f0C05BD49F681
 
-- link https://explorer.callisto.network/address/0xDA37856fb8Be71917DD0e1Bd81c622de92018A3D/transactions
+- link https://explorer.callisto.network/address/0xe03Db33365Fe239cF3C176a27c6f0C05BD49F681/transactions
