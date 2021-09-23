@@ -218,12 +218,6 @@ contract GlobalFarm is Ownable {
         uint32  multiplier;
         uint256 lastMintTimestamp;
     }
-    
-    struct Epoch {
-        uint256 id;
-        uint256 start;
-        uint256 end;
-    }
 
     // Snapshotted values have arrays of ids and the value corresponding to that id. These could be an array of a
     // Snapshot struct, but that would impede usage of functions that work on an array.
@@ -234,6 +228,7 @@ contract GlobalFarm is Ownable {
     
     mapping(address => Snapshots) private _farmMultiplierSnapshot;
     Snapshots private _totalMultipliersSnapshot;
+    Snapshots private _tokensPerYearSnapshot;
 
     // Snapshot ids increase monotonically, with the first value being 1. An id of 0 is invalid.
     Counters.Counter private _currentSnapshotId;
@@ -242,7 +237,8 @@ contract GlobalFarm is Ownable {
     uint256 public tokensPerYear  = 50 * 10**6 * 10*18;  // 50M tokens
     uint256 public totalMultipliers;
     uint256 public rewardDuration = 1 days;
-    uint256 public current_epoch_id       = 0;
+    
+    uint256 public pendingSnapshot = 0;
     //LocalFarm[] public localFarms;               // local farms list
     
     mapping(uint256 => LocalFarm) public localFarms;
@@ -250,7 +246,6 @@ contract GlobalFarm is Ownable {
     
     mapping(address => uint256)   public localFarmId;     // locals farm address => id; localFarm at ID = 0 is considered non-existing
     mapping(address => uint256)   public nextMint; // timestamp when token may be minted to local farm
-
 
     event AddLocalFarm(address _localFarm, uint32 _multiplier);
     event RemoveLocalFarm(address _localFarm);
@@ -262,6 +257,15 @@ contract GlobalFarm is Ownable {
     }
     
     // ======== Snapshotting ============ //
+    
+    function maintenance() public
+    {
+        if(pendingSnapshot != 0 && pendingSnapshot < block.timestamp)
+        {
+            _snapshot();
+            pendingSnapshot = 0;
+        }
+    }
     
     
     /**
@@ -287,9 +291,8 @@ contract GlobalFarm is Ownable {
      */
     function _snapshot() internal virtual returns (uint256) {
         _currentSnapshotId.increment();
-
-        uint256 currentId = getCurrentSnapshotId();
-        return currentId;
+        
+        return getCurrentSnapshotId();
     }
     
     function getCurrentSnapshotId() public view returns (uint256) {
@@ -328,6 +331,40 @@ contract GlobalFarm is Ownable {
             return (true, snapshots.values[index]);
         }
     }
+
+    function _updateFarmMultipliersSnapshot(address _localFarmAddress, uint256 _amount) private {
+        _updateSnapshot(_farmMultiplierSnapshot[_localFarmAddress], _amount);
+    }
+
+    function _updateTotalMultipliersSnapshot(uint256 _amount) private {
+        _updateSnapshot(_totalMultipliersSnapshot, _amount);
+    }
+
+    function _updateTokensPerYearSnapshot(uint256 _amount) private {
+        _updateSnapshot(_tokensPerYearSnapshot, _amount);
+    }
+
+    function _updateSnapshot(Snapshots storage snapshots, uint256 currentValue) private {
+        // Upon updating any snapshot queue new pendingEpoch
+        if(pendingSnapshot == 0)
+        {
+            pendingSnapshot = next_day_zero_timestamp();
+        }
+        
+        uint256 currentId = getCurrentSnapshotId();
+        if (_lastSnapshotId(snapshots.ids) < currentId) {
+            snapshots.ids.push(currentId);
+            snapshots.values.push(currentValue);
+        }
+    }
+
+    function _lastSnapshotId(uint256[] storage ids) private view returns (uint256) {
+        if (ids.length == 0) {
+            return 0;
+        } else {
+            return ids[ids.length - 1];
+        }
+    }
     
     function totalMultipliersAt(uint256 snapshotId) public view virtual returns (uint256) {
         (bool snapshotted, uint256 value) = _valueAt(snapshotId, _totalMultipliersSnapshot);
@@ -357,6 +394,10 @@ contract GlobalFarm is Ownable {
     function addLocalFarm(address _localFarmAddress, uint32 _multiplier) external onlyOwner {
         require(localFarmId[_localFarmAddress] == 0,  "LocalFarm with this address already exists");
         
+        // Updating snapshots first.
+        _updateFarmMultipliersSnapshot(_localFarmAddress, _multiplier);
+        _updateTotalMultipliersSnapshot(totalMultipliers + _multiplier);
+        
         // Increment last index before adding a farm.
         // Farm with index = 0 is considered non-existing.
         lastAddedFarmIndex++;
@@ -375,13 +416,14 @@ contract GlobalFarm is Ownable {
     }
 
     function addLocalFarmAtID(address _localFarmAddress, uint256 _id, uint32 _multiplier) external onlyOwner {
+        
+        // Allows adding farm at given ID if it is empty as a result of previous farm removal
         require(localFarmId[_localFarmAddress] == 0,  "LocalFarm with this address already exists");
         require(_id != 0,  "LocalFarm at address 0 is considered non-existing by system");
         require(_id < lastAddedFarmIndex, "Can not add farms ahead of autoincremented index");
         
-        // Increment last index before adding a farm.
-        
-        //localFarms.push(LocalFarm(_localFarm, _multiplier));
+        _updateFarmMultipliersSnapshot(_localFarmAddress, _multiplier);
+        _updateTotalMultipliersSnapshot(totalMultipliers + _multiplier);
         
         localFarms[_id].farmAddress = _localFarmAddress;
         localFarms[_id].multiplier  = _multiplier;
@@ -400,6 +442,9 @@ contract GlobalFarm is Ownable {
     function removeLocalFarmByAddress(address _localFarmAddress) external onlyOwner {
         require (farmExists(_localFarmAddress), "LocalFarm with this address does not exist");
         require (localFarmId[_localFarmAddress] != 0, "LocalFarm with this address does not exist"); 
+        
+        _updateFarmMultipliersSnapshot(_localFarmAddress, 0);
+        _updateTotalMultipliersSnapshot(totalMultipliers - localFarms[localFarmId[_localFarmAddress]].multiplier);
         
         totalMultipliers = totalMultipliers - uint256(localFarms[localFarmId[_localFarmAddress]].multiplier); // update totalMultipliers
         
@@ -422,10 +467,16 @@ contract GlobalFarm is Ownable {
         totalMultipliers = totalMultipliers + uint256(_multiplier) - uint256(oldMultiplier); // update totalMultipliers
         localFarms[localFarmId[_localFarmAddress]].multiplier = _multiplier;
         
+        _updateFarmMultipliersSnapshot(_localFarmAddress, _multiplier);
+        _updateTotalMultipliersSnapshot(totalMultipliers);
+        
         emit ChangeMultiplier(_localFarmAddress, oldMultiplier, _multiplier);
     }
 
     function changeTokenPerYear(uint256 newAmount) external onlyOwner {
+        
+        _updateTokensPerYearSnapshot(newAmount);
+        
         uint256 oldAmount = tokensPerYear;
         tokensPerYear = newAmount;
         emit ChangeTokenPerYear(oldAmount, newAmount);
