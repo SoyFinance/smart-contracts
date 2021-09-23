@@ -34,11 +34,11 @@
 
 #### Test Global Farm (1 day)
 
-- address: 0xea18CBD87692Cc4eCC9234Da06898D8dCd834671
+- address: 0x9e5Ebb61c0303632B05a2FAE53d7c25295Ee4b33
 
 #### Test Local Farm (1 day)
 
-- address: 0x457b92F3c4A2Ae5f469Fd2784b8e30c67E6dfCa4
+- address: 0xFE23db6A9Ca43B0312c7E4ACDa03785406FDB0a6
 
 #### Test Global Farm contract (3 minutes)
 
