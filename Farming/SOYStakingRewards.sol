@@ -261,7 +261,7 @@ contract StakingRewards is IERC223Recipient, IStakingRewards, RewardsDistributio
         if (totalFarmingSupply == 0) {
             return rewardPerTokenStored;
         }
-        return rewardPerTokenStored + (lastTimeRewardApplicable() - lastUpdateTime * rewardRate * 1e18 / totalFarmingSupply);
+        return rewardPerTokenStored + (lastTimeRewardApplicable() - lastUpdateTime) * rewardRate * 1e18 / totalFarmingSupply;
     }
 
     function earned(address account) public view override returns (uint256) {
