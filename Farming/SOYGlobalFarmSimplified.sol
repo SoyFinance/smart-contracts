@@ -115,9 +115,14 @@ contract GlobalFarm is Ownable {
         rewardsToken = IMintableToken(_rewardsToken);
     }
     
-    function today_zero_timestamp() public view returns (uint256)
+    function next_day() public view returns (uint256)
     {
-        return (block.timestamp / 1 days) * 1 days;
+        return (block.timestamp / 1 days) * 1 days + 1 days;
+    }
+    
+    function rewardMintingAvailable(address _farm) public view returns (bool)
+    {
+        return localFarms[localFarmId[_farm]].lastPayment + paymentDelay < next_day();
     }
     
     function getAllocation(address _farm) public view returns (uint256)
@@ -220,7 +225,7 @@ contract GlobalFarm is Ownable {
         
         // Comparing against 0:00 UTC always
         // to enable withdrawals for full days only at any point within 24 hours of a day.
-        if(localFarms[localFarmId[_localFarmAddress]].lastPayment + paymentDelay > today_zero_timestamp())
+        if(localFarms[localFarmId[_localFarmAddress]].lastPayment + paymentDelay > next_day())
         {
             // Someone is requesting payment for a Local Farm that was paid recently.
             // Do nothing.
@@ -228,8 +233,8 @@ contract GlobalFarm is Ownable {
         }
         else
         {
-            uint256 _reward = (today_zero_timestamp() - localFarms[localFarmId[_localFarmAddress]].lastPayment) * getRewardPerSecond() * getAllocation(_localFarmAddress);
-            localFarms[localFarmId[_localFarmAddress]].lastPayment = today_zero_timestamp();
+            uint256 _reward = (next_day() - localFarms[localFarmId[_localFarmAddress]].lastPayment) * getRewardPerSecond() * getAllocation(_localFarmAddress);
+            localFarms[localFarmId[_localFarmAddress]].lastPayment = next_day();
             rewardsToken.mint(_localFarmAddress, _reward);
             ILocalFarm(_localFarmAddress).notifyRewardAmount(_reward);
         }
