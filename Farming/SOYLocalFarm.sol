@@ -279,6 +279,12 @@ contract SOYLocalFarm is IERC223Recipient, ReentrancyGuard, RewardsRecipient
             return;
         }
         uint256 multiplier = block.timestamp - lastRewardTimestamp;
+        
+        // This silently calculates "assumed" reward!
+        // This function does not take contract's actual balance into account
+        // Global Farm and `reward_request` modifier are responsible for keeping this contract
+        // stocked with funds to pay actual rewards.
+        
         uint256 _reward = multiplier * getRewardPerSecond() * getAllocation();
         accumulatedRewardPerShare = accumulatedRewardPerShare + (_reward * 1e18 / lpSupply);
         lastRewardTimestamp = block.timestamp;
