@@ -209,7 +209,7 @@ contract SOYLocalFarm is IERC223Recipient, ReentrancyGuard, RewardsRecipient
     /* ========== ERC223 transaction handlers ====== */
     
     // Analogue of deposit() function.
-    function tokenReceived(address _from, uint256 _amount, bytes memory _data) public override
+    function tokenReceived(address _from, uint256 _amount, bytes memory _data) public override nonReentrant
     {
         _data; // Stupid warning silencer.
         
@@ -287,7 +287,7 @@ contract SOYLocalFarm is IERC223Recipient, ReentrancyGuard, RewardsRecipient
     
 
     // Withdraw tokens from STAKING.
-    function withdraw(uint256 _amount) public {
+    function withdraw(uint256 _amount) public nonReentrant {
         UserInfo storage user = userInfo[msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
         
@@ -306,7 +306,7 @@ contract SOYLocalFarm is IERC223Recipient, ReentrancyGuard, RewardsRecipient
     }
 
     // Withdraw without caring about rewards. EMERGENCY ONLY.
-    function emergencyWithdraw() public {
+    function emergencyWithdraw() public nonReentrant {
         UserInfo storage user = userInfo[msg.sender];
         lpToken.transfer(address(msg.sender), user.amount);
         emit EmergencyWithdraw(msg.sender, user.amount);
