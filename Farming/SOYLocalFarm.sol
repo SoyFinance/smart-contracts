@@ -151,9 +151,10 @@ abstract contract RewardsRecipient {
 
 
 interface ISimplifiedGlobalFarm {
-    function mintFarmingReward(address _localFarm, uint256 _period) external;
+    function mintFarmingReward(address _localFarm) external;
     function getAllocation(address _farm) external view returns (uint256);
     function getRewardPerSecond() external view returns (uint256);
+    function rewardMintingAvailable(address _farm) external view returns (bool);
 }
 
 // Inheritancea
@@ -235,7 +236,7 @@ contract SOYLocalFarm is IERC223Recipient, ReentrancyGuard, RewardsRecipient
     
     function notifyRewardAmount(uint256 reward) external override
     {
-        
+        emit RewardAdded(reward);
     }
     
     function getRewardPerSecond() public view returns (uint256)
@@ -268,7 +269,7 @@ contract SOYLocalFarm is IERC223Recipient, ReentrancyGuard, RewardsRecipient
     
 
     // Update reward variables of this Local Farm to be up-to-date.
-    function update() public {
+    function update() public reward_request {
         if (block.timestamp <= lastRewardTimestamp) {
             return;
         }
@@ -289,6 +290,7 @@ contract SOYLocalFarm is IERC223Recipient, ReentrancyGuard, RewardsRecipient
     function withdraw(uint256 _amount) public {
         UserInfo storage user = userInfo[msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
+        
         update;
         uint256 pending = user.amount * accumulatedRewardPerShare / 1e18 - user.rewardDebt;
         if(pending > 0) {
@@ -319,4 +321,14 @@ contract SOYLocalFarm is IERC223Recipient, ReentrancyGuard, RewardsRecipient
         rewardsToken.transfer(address(msg.sender), _amount);
     }
     */
+    
+    
+    modifier reward_request
+    {
+        if(ISimplifiedGlobalFarm(globalFarm).rewardMintingAvailable(address(this)))
+        {
+            ISimplifiedGlobalFarm(globalFarm).mintFarmingReward(address(this));
+        }
+        _;
+    }
 }
