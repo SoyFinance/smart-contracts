@@ -89,7 +89,7 @@ contract GlobalFarm is Ownable {
     
     struct LocalFarm {
         address farmAddress;
-        uint32  multiplier;
+        uint256  multiplier;
         uint256 lastPayment;
     }
     
@@ -108,7 +108,7 @@ contract GlobalFarm is Ownable {
 
     event AddLocalFarm(address _localFarm, uint32 _multiplier);
     event RemoveLocalFarm(address _localFarm);
-    event ChangeMultiplier(address _localFarm, uint32 _oldMultiplier, uint32 _newMultiplier);
+    event ChangeMultiplier(address _localFarm, uint256 _oldMultiplier, uint256 _newMultiplier);
     event ChangeTokenPerYear(uint256 oldAmount, uint256 newAmount);
 
     constructor (address _rewardsToken) {
@@ -127,7 +127,7 @@ contract GlobalFarm is Ownable {
     
     function getAllocationX1000(address _farm) public view returns (uint256)
     {
-        return localFarms[localFarmId[_farm]].multiplier / totalMultipliers * 1000;
+        return 1000 * localFarms[localFarmId[_farm]].multiplier / totalMultipliers;
     }
     
     function getRewardPerSecond() public view returns (uint256)
@@ -208,7 +208,7 @@ contract GlobalFarm is Ownable {
     function changeMultiplier(address _localFarmAddress, uint32 _multiplier) external onlyOwner {
         require (farmExists(_localFarmAddress), "LocalFarm with this address does not exist");
         
-        uint32 oldMultiplier = localFarms[localFarmId[_localFarmAddress]].multiplier;
+        uint256 oldMultiplier = localFarms[localFarmId[_localFarmAddress]].multiplier;
         totalMultipliers = totalMultipliers + uint256(_multiplier) - uint256(oldMultiplier); // update totalMultipliers
         localFarms[localFarmId[_localFarmAddress]].multiplier = _multiplier;
         emit ChangeMultiplier(_localFarmAddress, oldMultiplier, _multiplier);
