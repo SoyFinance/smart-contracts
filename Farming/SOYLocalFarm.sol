@@ -215,14 +215,14 @@ contract SOYLocalFarm is IERC223Recipient, ReentrancyGuard, RewardsRecipient
         
         require(msg.sender == address(lpToken), "Trying to deposit wrong token");
         
-        UserInfo storage user = userInfo[msg.sender];
+        UserInfo storage user = userInfo[_from];
         require(user.amount + _amount <= limitAmount, 'exceed the top');
 
         update;
         if (user.amount > 0) {
             uint256 pending = user.amount * accumulatedRewardPerShare / 1e18 - user.rewardDebt;
             if(pending > 0) {
-                rewardsToken.transfer(address(msg.sender), pending);
+                rewardsToken.transfer(address(_from), pending);
             }
         }
         if(_amount > 0) {
