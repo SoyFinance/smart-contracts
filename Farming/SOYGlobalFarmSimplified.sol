@@ -133,7 +133,7 @@ contract GlobalFarm is Ownable {
     function getRewardPerSecond() public view returns (uint256)
     {
         // Solidity rounding is nasty
-        return tokensPerYear / (365 days * 24 * 60 * 60);
+        return tokensPerYear / 365 days;
     }
 
     function getLocalFarmId(address _localFarmAddress) external view returns (uint256) {
