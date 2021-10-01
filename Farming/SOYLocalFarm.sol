@@ -182,6 +182,8 @@ contract SOYLocalFarm is IERC223Recipient, ReentrancyGuard, RewardsRecipient
     // Info of each user that stakes LP tokens.
     mapping (address => UserInfo) public userInfo;
     
+    bool public active = false;
+    
     uint256 public activeEpoch;
     
     uint256 public limitAmount = 100000 * 1e18; // Check correctness!
@@ -274,8 +276,15 @@ contract SOYLocalFarm is IERC223Recipient, ReentrancyGuard, RewardsRecipient
             return;
         }
         uint256 lpSupply = lpToken.balanceOf(address(this));
-        if (lpSupply == 0) {
+       
+       /* if (lpSupply == 0) {
             lastRewardTimestamp = block.timestamp;
+            return;
+        }*/
+        
+        if (!active) {
+            lastRewardTimestamp = block.timestamp;
+            active = true;
             return;
         }
         uint256 multiplier = block.timestamp - lastRewardTimestamp;
