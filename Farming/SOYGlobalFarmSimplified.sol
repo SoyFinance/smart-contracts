@@ -94,7 +94,7 @@ contract GlobalFarm is Ownable {
     }
     
     IMintableToken public rewardsToken;                 // SOY token
-    uint256 public tokensPerYear = 50 * 10**6 * 10*18;  // 50M tokens
+    uint256 public tokensPerYear = 50 * 10**6 * 10**18;  // 50M tokens
     uint256 public totalMultipliers;
     uint256 public paymentDelay = 1 days;
     //LocalFarm[] public localFarms;               // local farms list
@@ -115,19 +115,19 @@ contract GlobalFarm is Ownable {
         rewardsToken = IMintableToken(_rewardsToken);
     }
     
-    function next_day() public view returns (uint256)
+    function next_payment() public view returns (uint256)
     {
-        return (block.timestamp / 1 days) * 1 days + 1 days;
+        return (block.timestamp / paymentDelay) * paymentDelay + paymentDelay;
     }
     
     function rewardMintingAvailable(address _farm) public view returns (bool)
     {
-        return localFarms[localFarmId[_farm]].lastPayment + paymentDelay < next_day();
+        return localFarms[localFarmId[_farm]].lastPayment + paymentDelay < next_payment();
     }
     
-    function getAllocation(address _farm) public view returns (uint256)
+    function getAllocationX1000(address _farm) public view returns (uint256)
     {
-        return localFarms[localFarmId[_farm]].multiplier / totalMultipliers;
+        return localFarms[localFarmId[_farm]].multiplier / totalMultipliers * 1000;
     }
     
     function getRewardPerSecond() public view returns (uint256)
@@ -225,7 +225,7 @@ contract GlobalFarm is Ownable {
         
         // Comparing against 0:00 UTC always
         // to enable withdrawals for full days only at any point within 24 hours of a day.
-        if(localFarms[localFarmId[_localFarmAddress]].lastPayment + paymentDelay > next_day())
+        if(localFarms[localFarmId[_localFarmAddress]].lastPayment + paymentDelay > next_payment())
         {
             // Someone is requesting payment for a Local Farm that was paid recently.
             // Do nothing.
@@ -233,8 +233,8 @@ contract GlobalFarm is Ownable {
         }
         else
         {
-            uint256 _reward = (next_day() - localFarms[localFarmId[_localFarmAddress]].lastPayment) * getRewardPerSecond() * getAllocation(_localFarmAddress);
-            localFarms[localFarmId[_localFarmAddress]].lastPayment = next_day();
+            uint256 _reward = (next_payment() - localFarms[localFarmId[_localFarmAddress]].lastPayment) * getRewardPerSecond() * getAllocationX1000(_localFarmAddress) / 1000;
+            localFarms[localFarmId[_localFarmAddress]].lastPayment = next_payment();
             rewardsToken.mint(_localFarmAddress, _reward);
             ILocalFarm(_localFarmAddress).notifyRewardAmount(_reward);
         }
