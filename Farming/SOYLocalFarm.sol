@@ -241,7 +241,7 @@ contract SOYLocalFarm is IERC223Recipient, ReentrancyGuard, RewardsRecipient
     
     function getRewardPerSecond() public view returns (uint256)
     {
-        return ISimplifiedGlobalFarm(globalFarm).getAllocation(address(this));
+        return ISimplifiedGlobalFarm(globalFarm).getRewardPerSecond();
     }
     
     function getAllocationX1000() public view returns (uint256)
