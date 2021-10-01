@@ -152,7 +152,7 @@ abstract contract RewardsRecipient {
 
 interface ISimplifiedGlobalFarm {
     function mintFarmingReward(address _localFarm) external;
-    function getAllocation(address _farm) external view returns (uint256);
+    function getAllocationX1000(address _farm) external view returns (uint256);
     function getRewardPerSecond() external view returns (uint256);
     function rewardMintingAvailable(address _farm) external view returns (bool);
 }
@@ -246,7 +246,7 @@ contract SOYLocalFarm is IERC223Recipient, ReentrancyGuard, RewardsRecipient
     
     function getAllocationX1000() public view returns (uint256)
     {
-        return ISimplifiedGlobalFarm(globalFarm).getAllocation(address(this));
+        return ISimplifiedGlobalFarm(globalFarm).getAllocationX1000(address(this));
     }
     
     /* ========== Farm Functions ====== */
