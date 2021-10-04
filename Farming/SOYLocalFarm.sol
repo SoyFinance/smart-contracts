@@ -220,7 +220,7 @@ contract SOYLocalFarm is IERC223Recipient, ReentrancyGuard, RewardsRecipient
         //UserInfo storage user = userInfo[_from];
         require(userInfo[_from].amount + _amount <= limitAmount, 'exceed the top');
 
-        update;
+        update();
         if (userInfo[_from].amount > 0) {
             uint256 pending = userInfo[_from].amount * accumulatedRewardPerShare / 1e18 - userInfo[_from].rewardDebt;
             if(pending > 0) {
@@ -277,16 +277,17 @@ contract SOYLocalFarm is IERC223Recipient, ReentrancyGuard, RewardsRecipient
         }
         uint256 lpSupply = lpToken.balanceOf(address(this));
        
-       /* if (lpSupply == 0) {
+        if (lpSupply == 0) {
             lastRewardTimestamp = block.timestamp;
             return;
-        }*/
+        }
         
+        /*
         if (!active) {
             lastRewardTimestamp = block.timestamp;
             active = true;
             return;
-        }
+        } */
         uint256 multiplier = block.timestamp - lastRewardTimestamp;
         
         // This silently calculates "assumed" reward!
@@ -306,7 +307,7 @@ contract SOYLocalFarm is IERC223Recipient, ReentrancyGuard, RewardsRecipient
         UserInfo storage user = userInfo[msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
         
-        update;
+        update();
         uint256 pending = user.amount * accumulatedRewardPerShare / 1e18 - user.rewardDebt;
         if(pending > 0) {
             rewardsToken.transfer(address(msg.sender), pending);
