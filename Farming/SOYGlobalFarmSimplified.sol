@@ -96,7 +96,7 @@ contract GlobalFarm is Ownable {
     IMintableToken public rewardsToken;                 // SOY token
     uint256 public tokensPerYear = 50 * 10**6 * 10**18;  // 50M tokens
     uint256 public totalMultipliers;
-    uint256 public paymentDelay = 1 days;
+    uint256 public paymentDelay = 3 minutes;          // 3 minutes - lowered for testing reasons : DEFAULTS_TO 1 days
     //LocalFarm[] public localFarms;               // local farms list
     
     mapping(uint256 => LocalFarm) public localFarms;
@@ -151,11 +151,9 @@ contract GlobalFarm is Ownable {
         // Farm with index = 0 is considered non-existing.
         lastAddedFarmIndex++;
         
-        //localFarms.push(LocalFarm(_localFarm, _multiplier));
-        
-        localFarms[lastAddedFarmIndex].farmAddress       = _localFarmAddress;
-        localFarms[lastAddedFarmIndex].multiplier        = _multiplier;
-        localFarms[lastAddedFarmIndex].lastPayment = block.timestamp;
+        localFarms[lastAddedFarmIndex].farmAddress = _localFarmAddress;
+        localFarms[lastAddedFarmIndex].multiplier  = _multiplier;
+        localFarms[lastAddedFarmIndex].lastPayment = next_payment() - paymentDelay;
         
         localFarmId[_localFarmAddress]             = lastAddedFarmIndex;
         
@@ -164,6 +162,7 @@ contract GlobalFarm is Ownable {
         emit AddLocalFarm(_localFarmAddress, _multiplier);
     }
 
+/*
     function addLocalFarmAtID(address _localFarmAddress, uint256 _id, uint32 _multiplier) external onlyOwner {
         require(localFarmId[_localFarmAddress] == 0,  "LocalFarm with this address already exists");
         require(_id != 0,  "LocalFarm at address 0 is considered non-existing by system");
@@ -181,6 +180,7 @@ contract GlobalFarm is Ownable {
         
         emit AddLocalFarm(_localFarmAddress, _multiplier);
     }
+    */
     
     function farmExists(address _farmAddress) public view returns (bool _exists)
     {
