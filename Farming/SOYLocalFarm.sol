@@ -152,7 +152,7 @@ abstract contract RewardsRecipient {
 
 interface ISimplifiedGlobalFarm {
     function mintFarmingReward(address _localFarm) external;
-    function getAllocation(address _farm) external view returns (uint256);
+    function getAllocationX1000(address _farm) external view returns (uint256);
     function getRewardPerSecond() external view returns (uint256);
     function rewardMintingAvailable(address _farm) external view returns (bool);
 }
@@ -181,6 +181,8 @@ contract SOYLocalFarm is IERC223Recipient, ReentrancyGuard, RewardsRecipient
     }
     // Info of each user that stakes LP tokens.
     mapping (address => UserInfo) public userInfo;
+    
+    bool public active = false;
     
     uint256 public activeEpoch;
     
@@ -215,20 +217,20 @@ contract SOYLocalFarm is IERC223Recipient, ReentrancyGuard, RewardsRecipient
         
         require(msg.sender == address(lpToken), "Trying to deposit wrong token");
         
-        UserInfo storage user = userInfo[msg.sender];
-        require(user.amount + _amount <= limitAmount, 'exceed the top');
+        //UserInfo storage user = userInfo[_from];
+        require(userInfo[_from].amount + _amount <= limitAmount, 'exceed the top');
 
-        update;
-        if (user.amount > 0) {
-            uint256 pending = user.amount * accumulatedRewardPerShare / 1e18 - user.rewardDebt;
+        update();
+        if (userInfo[_from].amount > 0) {
+            uint256 pending = userInfo[_from].amount * accumulatedRewardPerShare / 1e18 - userInfo[_from].rewardDebt;
             if(pending > 0) {
-                rewardsToken.transfer(address(msg.sender), pending);
+                rewardsToken.transfer(address(_from), pending);
             }
         }
         if(_amount > 0) {
-            user.amount += _amount;
+            userInfo[_from].amount += _amount;
         }
-        user.rewardDebt = user.amount * accumulatedRewardPerShare / 1e18;
+        userInfo[_from].rewardDebt = userInfo[_from].amount * accumulatedRewardPerShare / 1e18;
         
         emit Staked(_from, _amount);
     }
@@ -241,12 +243,12 @@ contract SOYLocalFarm is IERC223Recipient, ReentrancyGuard, RewardsRecipient
     
     function getRewardPerSecond() public view returns (uint256)
     {
-        return ISimplifiedGlobalFarm(globalFarm).getAllocation(address(this));
+        return ISimplifiedGlobalFarm(globalFarm).getRewardPerSecond();
     }
     
-    function getAllocation() public view returns (uint256)
+    function getAllocationX1000() public view returns (uint256)
     {
-        return ISimplifiedGlobalFarm(globalFarm).getAllocation(address(this));
+        return ISimplifiedGlobalFarm(globalFarm).getAllocationX1000(address(this));
     }
     
     /* ========== Farm Functions ====== */
@@ -258,7 +260,7 @@ contract SOYLocalFarm is IERC223Recipient, ReentrancyGuard, RewardsRecipient
         uint256 lpSupply = lpToken.balanceOf(address(this));
         if (block.timestamp > lastRewardTimestamp && lpSupply != 0) {
             uint256 multiplier = block.timestamp - lastRewardTimestamp;
-            uint256 _reward = multiplier * getRewardPerSecond() * getAllocation();
+            uint256 _reward = multiplier * getRewardPerSecond() * getAllocationX1000() / 1000;
             //accumulatedRewardPerShare = accCakePerShare.add(cakeReward.mul(1e12).div(lpSupply));
             
             _accumulatedRewardPerShare = accumulatedRewardPerShare + (_reward * 1e18 / lpSupply);
@@ -274,10 +276,18 @@ contract SOYLocalFarm is IERC223Recipient, ReentrancyGuard, RewardsRecipient
             return;
         }
         uint256 lpSupply = lpToken.balanceOf(address(this));
+       
         if (lpSupply == 0) {
             lastRewardTimestamp = block.timestamp;
             return;
         }
+        
+        /*
+        if (!active) {
+            lastRewardTimestamp = block.timestamp;
+            active = true;
+            return;
+        } */
         uint256 multiplier = block.timestamp - lastRewardTimestamp;
         
         // This silently calculates "assumed" reward!
@@ -285,7 +295,7 @@ contract SOYLocalFarm is IERC223Recipient, ReentrancyGuard, RewardsRecipient
         // Global Farm and `reward_request` modifier are responsible for keeping this contract
         // stocked with funds to pay actual rewards.
         
-        uint256 _reward = multiplier * getRewardPerSecond() * getAllocation();
+        uint256 _reward = multiplier * getRewardPerSecond() * getAllocationX1000() / 1000;
         accumulatedRewardPerShare = accumulatedRewardPerShare + (_reward * 1e18 / lpSupply);
         lastRewardTimestamp = block.timestamp;
     }
@@ -297,7 +307,7 @@ contract SOYLocalFarm is IERC223Recipient, ReentrancyGuard, RewardsRecipient
         UserInfo storage user = userInfo[msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
         
-        update;
+        update();
         uint256 pending = user.amount * accumulatedRewardPerShare / 1e18 - user.rewardDebt;
         if(pending > 0) {
             rewardsToken.transfer(address(msg.sender), pending);

@@ -89,14 +89,14 @@ contract GlobalFarm is Ownable {
     
     struct LocalFarm {
         address farmAddress;
-        uint32  multiplier;
+        uint256  multiplier;
         uint256 lastPayment;
     }
     
     IMintableToken public rewardsToken;                 // SOY token
-    uint256 public tokensPerYear = 50 * 10**6 * 10*18;  // 50M tokens
+    uint256 public tokensPerYear = 50 * 10**6 * 10**18; // 50M tokens
     uint256 public totalMultipliers;
-    uint256 public paymentDelay = 1 days;
+    uint256 public paymentDelay = 1 days;          // DEFAULTS_TO 1 days
     //LocalFarm[] public localFarms;               // local farms list
     
     mapping(uint256 => LocalFarm) public localFarms;
@@ -108,32 +108,32 @@ contract GlobalFarm is Ownable {
 
     event AddLocalFarm(address _localFarm, uint32 _multiplier);
     event RemoveLocalFarm(address _localFarm);
-    event ChangeMultiplier(address _localFarm, uint32 _oldMultiplier, uint32 _newMultiplier);
+    event ChangeMultiplier(address _localFarm, uint256 _oldMultiplier, uint256 _newMultiplier);
     event ChangeTokenPerYear(uint256 oldAmount, uint256 newAmount);
 
     constructor (address _rewardsToken) {
         rewardsToken = IMintableToken(_rewardsToken);
     }
     
-    function next_day() public view returns (uint256)
+    function next_payment() public view returns (uint256)
     {
-        return (block.timestamp / 1 days) * 1 days + 1 days;
+        return (block.timestamp / paymentDelay) * paymentDelay + paymentDelay;
     }
     
     function rewardMintingAvailable(address _farm) public view returns (bool)
     {
-        return localFarms[localFarmId[_farm]].lastPayment + paymentDelay < next_day();
+        return localFarms[localFarmId[_farm]].lastPayment + paymentDelay < next_payment();
     }
     
-    function getAllocation(address _farm) public view returns (uint256)
+    function getAllocationX1000(address _farm) public view returns (uint256)
     {
-        return localFarms[localFarmId[_farm]].multiplier / totalMultipliers;
+        return 1000 * localFarms[localFarmId[_farm]].multiplier / totalMultipliers;
     }
     
     function getRewardPerSecond() public view returns (uint256)
     {
         // Solidity rounding is nasty
-        return tokensPerYear / (365 days * 24 * 60 * 60);
+        return tokensPerYear / 365 days;
     }
 
     function getLocalFarmId(address _localFarmAddress) external view returns (uint256) {
@@ -151,11 +151,9 @@ contract GlobalFarm is Ownable {
         // Farm with index = 0 is considered non-existing.
         lastAddedFarmIndex++;
         
-        //localFarms.push(LocalFarm(_localFarm, _multiplier));
-        
-        localFarms[lastAddedFarmIndex].farmAddress       = _localFarmAddress;
-        localFarms[lastAddedFarmIndex].multiplier        = _multiplier;
-        localFarms[lastAddedFarmIndex].lastPayment = block.timestamp;
+        localFarms[lastAddedFarmIndex].farmAddress = _localFarmAddress;
+        localFarms[lastAddedFarmIndex].multiplier  = _multiplier;
+        localFarms[lastAddedFarmIndex].lastPayment = next_payment() - paymentDelay;
         
         localFarmId[_localFarmAddress]             = lastAddedFarmIndex;
         
@@ -164,6 +162,7 @@ contract GlobalFarm is Ownable {
         emit AddLocalFarm(_localFarmAddress, _multiplier);
     }
 
+/*
     function addLocalFarmAtID(address _localFarmAddress, uint256 _id, uint32 _multiplier) external onlyOwner {
         require(localFarmId[_localFarmAddress] == 0,  "LocalFarm with this address already exists");
         require(_id != 0,  "LocalFarm at address 0 is considered non-existing by system");
@@ -181,6 +180,7 @@ contract GlobalFarm is Ownable {
         
         emit AddLocalFarm(_localFarmAddress, _multiplier);
     }
+    */
     
     function farmExists(address _farmAddress) public view returns (bool _exists)
     {
@@ -208,7 +208,7 @@ contract GlobalFarm is Ownable {
     function changeMultiplier(address _localFarmAddress, uint32 _multiplier) external onlyOwner {
         require (farmExists(_localFarmAddress), "LocalFarm with this address does not exist");
         
-        uint32 oldMultiplier = localFarms[localFarmId[_localFarmAddress]].multiplier;
+        uint256 oldMultiplier = localFarms[localFarmId[_localFarmAddress]].multiplier;
         totalMultipliers = totalMultipliers + uint256(_multiplier) - uint256(oldMultiplier); // update totalMultipliers
         localFarms[localFarmId[_localFarmAddress]].multiplier = _multiplier;
         emit ChangeMultiplier(_localFarmAddress, oldMultiplier, _multiplier);
@@ -225,7 +225,7 @@ contract GlobalFarm is Ownable {
         
         // Comparing against 0:00 UTC always
         // to enable withdrawals for full days only at any point within 24 hours of a day.
-        if(localFarms[localFarmId[_localFarmAddress]].lastPayment + paymentDelay > next_day())
+        if(localFarms[localFarmId[_localFarmAddress]].lastPayment + paymentDelay > next_payment())
         {
             // Someone is requesting payment for a Local Farm that was paid recently.
             // Do nothing.
@@ -233,8 +233,8 @@ contract GlobalFarm is Ownable {
         }
         else
         {
-            uint256 _reward = (next_day() - localFarms[localFarmId[_localFarmAddress]].lastPayment) * getRewardPerSecond() * getAllocation(_localFarmAddress);
-            localFarms[localFarmId[_localFarmAddress]].lastPayment = next_day();
+            uint256 _reward = (next_payment() - localFarms[localFarmId[_localFarmAddress]].lastPayment) * getRewardPerSecond() * getAllocationX1000(_localFarmAddress) / 1000;
+            localFarms[localFarmId[_localFarmAddress]].lastPayment = next_payment();
             rewardsToken.mint(_localFarmAddress, _reward);
             ILocalFarm(_localFarmAddress).notifyRewardAmount(_reward);
         }
