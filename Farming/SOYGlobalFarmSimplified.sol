@@ -94,9 +94,9 @@ contract GlobalFarm is Ownable {
     }
     
     IMintableToken public rewardsToken;                 // SOY token
-    uint256 public tokensPerYear = 50 * 10**6 * 10**18;  // 50M tokens
+    uint256 public tokensPerYear = 50 * 10**6 * 10**18; // 50M tokens
     uint256 public totalMultipliers;
-    uint256 public paymentDelay = 3 minutes;          // 3 minutes - lowered for testing reasons : DEFAULTS_TO 1 days
+    uint256 public paymentDelay = 1 days;          // DEFAULTS_TO 1 days
     //LocalFarm[] public localFarms;               // local farms list
     
     mapping(uint256 => LocalFarm) public localFarms;
