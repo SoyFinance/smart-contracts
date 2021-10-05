@@ -268,7 +268,7 @@ abstract contract IERC223Recipient {
  * @param _value Amount of tokens.
  * @param _data  Transaction metadata.
  */
-    function tokenReceived(address _from, uint _value, bytes memory _data) external virtual returns (bool);
+    function tokenReceived(address _from, uint _value, bytes memory _data) external virtual;
 }
 
 
