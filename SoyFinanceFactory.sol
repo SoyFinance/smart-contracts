@@ -1,7 +1,4 @@
-// Sources flattened with hardhat v2.2.1 https://hardhat.org
-
-// File contracts/interfaces/ISoyFinanceFactory.sol
-
+// SPDX-License-Identifier: No License (None)
 pragma solidity >=0.5.17;
 
 interface IERC223Recipient {
@@ -48,19 +45,27 @@ interface ISoyFinanceFactory {
 }
 
 interface ISoyFinancePair {
+    event Approval(address indexed owner, address indexed spender, uint value);
     event Transfer(address indexed from, address indexed to, uint value);
 
     function name() external pure returns (string memory);
     function symbol() external pure returns (string memory);
+    function standard() external pure returns (string memory);
     function decimals() external pure returns (uint8);
     function totalSupply() external view returns (uint);
     function balanceOf(address owner) external view returns (uint);
-    
+    function allowance(address owner, address spender) external view returns (uint);
+
+    function approve(address spender, uint value) external returns (bool);
     function transfer(address to, uint value) external returns (bool);
     function transfer(address to, uint value, bytes calldata data) external returns (bool);
+    function transferFrom(address from, address to, uint value) external returns (bool);
 
     function DOMAIN_SEPARATOR() external view returns (bytes32);
+    function PERMIT_TYPEHASH() external pure returns (bytes32);
     function nonces(address owner) external view returns (uint);
+
+    function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external;
 
     event Mint(address indexed sender, uint amount0, uint amount1);
     event Burn(address indexed sender, uint amount0, uint amount1, address indexed to);
@@ -93,20 +98,28 @@ interface ISoyFinancePair {
 }
 
 interface ISoyFinanceERC223 {
+    event Approval(address indexed owner, address indexed spender, uint value);
     event Transfer(address indexed from, address indexed to, uint value);
     event TransferData(bytes data);
 
     function name() external pure returns (string memory);
     function symbol() external pure returns (string memory);
+    function standard() external pure returns (string memory);
     function decimals() external pure returns (uint8);
     function totalSupply() external view returns (uint);
     function balanceOf(address owner) external view returns (uint);
-    
+    function allowance(address owner, address spender) external view returns (uint);
+
+    function approve(address spender, uint value) external returns (bool);
     function transfer(address to, uint value) external returns (bool);
     function transfer(address to, uint value, bytes calldata data) external returns (bool);
+    function transferFrom(address from, address to, uint value) external returns (bool);
 
     function DOMAIN_SEPARATOR() external view returns (bytes32);
+    function PERMIT_TYPEHASH() external pure returns (bytes32);
     function nonces(address owner) external view returns (uint);
+
+    function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external;
 }
 // a library for performing overflow-safe math, courtesy of DappHub (https://github.com/dapphub/ds-math)
 
@@ -130,24 +143,19 @@ contract  SoyFinanceERC223 is ISoyFinanceERC223 {
 
     string public constant name = 'SoyFinance LPs';
     string public constant symbol = 'SOY-LP';
+    string public constant standard = 'erc223';
     uint8 public constant decimals = 18;
     uint  public totalSupply;
     mapping(address => uint) public balanceOf;
     mapping(address => mapping(address => uint)) public allowance;
 
     bytes32 public DOMAIN_SEPARATOR;
+    // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
+    bytes32 public constant PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
     mapping(address => uint) public nonces;
     
+    event Approval(address indexed owner, address indexed spender, uint value);
     event Transfer(address indexed from, address indexed to, uint value);
-
-    uint private token_unlocked = 1;
-    modifier token_lock() {
-        require(token_unlocked == 1, 'SoyFinance: TOKEN REENTRANCY DETECTED');
-        token_unlocked = 0;
-        _;
-        token_unlocked = 1;
-    }
-
 
     constructor() public {
         uint chainId;
@@ -177,28 +185,62 @@ contract  SoyFinanceERC223 is ISoyFinanceERC223 {
         emit Transfer(from, address(0), value);
     }
 
-    function _transfer(address from, address to, uint value, bytes memory data) private token_lock() {
+    function _approve(address owner, address spender, uint value) private {
+        allowance[owner][spender] = value;
+        emit Approval(owner, spender, value);
+    }
+
+    function _transfer(address from, address to, uint value) private {
         balanceOf[from] = balanceOf[from].sub(value);
         balanceOf[to] = balanceOf[to].add(value);
-        
-        if(to.isContract())
-        {
-            IERC223Recipient(to).tokenReceived(from, value, data);
-        }
-        
         emit Transfer(from, to, value);
-        emit TransferData(data);
+    }
+
+    function approve(address spender, uint value) external returns (bool) {
+        _approve(msg.sender, spender, value);
+        return true;
     }
 
     function transfer(address to, uint value) external returns (bool) {
         bytes memory _empty = hex"00000000";
-        _transfer(msg.sender, to, value, _empty);
+         _transfer(msg.sender, to, value);
+        
+        if(to.isContract()) {
+            IERC223Recipient(to).tokenReceived(msg.sender, value, _empty);
+        }
+        emit TransferData(_empty);
+        return true;
+    }
+    
+    function transfer(address to, uint value, bytes calldata data) external returns (bool) {
+        _transfer(msg.sender, to, value);
+        if(to.isContract()) {
+            IERC223Recipient(to).tokenReceived(msg.sender, value, data);
+        }
+        emit TransferData(data);
         return true;
     }
 
-    function transfer(address to, uint value, bytes calldata data) external returns (bool) {
-        _transfer(msg.sender, to, value, data);
+    function transferFrom(address from, address to, uint value) external returns (bool) {
+        if (allowance[from][msg.sender] != uint(-1)) {
+            allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);
+        }
+        _transfer(from, to, value);
         return true;
+    }
+
+    function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external {
+        require(deadline >= block.timestamp, 'SoyFinance: EXPIRED');
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                '\x19\x01',
+                DOMAIN_SEPARATOR,
+                keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, value, nonces[owner]++, deadline))
+            )
+        );
+        address recoveredAddress = ecrecover(digest, v, r, s);
+        require(recoveredAddress != address(0) && recoveredAddress == owner, 'SoyFinance: INVALID_SIGNATURE');
+        _approve(owner, spender, value);
     }
 }
 
@@ -242,21 +284,6 @@ library UQ112x112 {
     }
 }
 
-interface IERC20 {
-    event Approval(address indexed owner, address indexed spender, uint value);
-    event Transfer(address indexed from, address indexed to, uint value);
-
-    function name() external view returns (string memory);
-    function symbol() external view returns (string memory);
-    function decimals() external view returns (uint8);
-    function totalSupply() external view returns (uint);
-    function balanceOf(address owner) external view returns (uint);
-    function allowance(address owner, address spender) external view returns (uint);
-
-    function approve(address spender, uint value) external returns (bool);
-    function transfer(address to, uint value) external returns (bool);
-    function transferFrom(address from, address to, uint value) external returns (bool);
-}
 
 interface ISoyFinanceCallee {
     function soyFinanceCall(address sender, uint amount0, uint amount1, bytes calldata data) external;
@@ -284,7 +311,7 @@ contract SoyFinancePair is ISoyFinancePair, SoyFinanceERC223 {
     uint private unlocked = 1;
     modifier lock() {
         require(unlocked == 1, 'SoyFinance: LOCKED');
-        unlocked = 0;
+        unlocked = 2;
         _;
         unlocked = 1;
     }
@@ -363,8 +390,8 @@ contract SoyFinancePair is ISoyFinancePair, SoyFinanceERC223 {
     // this low-level function should be called from a contract which performs important safety checks
     function mint(address to) external lock returns (uint liquidity) {
         (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings
-        uint balance0 = IERC20(token0).balanceOf(address(this));
-        uint balance1 = IERC20(token1).balanceOf(address(this));
+        uint balance0 = ISoyFinanceERC223(token0).balanceOf(address(this));
+        uint balance1 = ISoyFinanceERC223(token1).balanceOf(address(this));
         uint amount0 = balance0.sub(_reserve0);
         uint amount1 = balance1.sub(_reserve1);
 
@@ -389,8 +416,8 @@ contract SoyFinancePair is ISoyFinancePair, SoyFinanceERC223 {
         (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings
         address _token0 = token0;                                // gas savings
         address _token1 = token1;                                // gas savings
-        uint balance0 = IERC20(_token0).balanceOf(address(this));
-        uint balance1 = IERC20(_token1).balanceOf(address(this));
+        uint balance0 = ISoyFinanceERC223(_token0).balanceOf(address(this));
+        uint balance1 = ISoyFinanceERC223(_token1).balanceOf(address(this));
         uint liquidity = balanceOf[address(this)];
 
         bool feeOn = _mintFee(_reserve0, _reserve1);
@@ -401,8 +428,8 @@ contract SoyFinancePair is ISoyFinancePair, SoyFinanceERC223 {
         _burn(address(this), liquidity);
         _safeTransfer(_token0, to, amount0);
         _safeTransfer(_token1, to, amount1);
-        balance0 = IERC20(_token0).balanceOf(address(this));
-        balance1 = IERC20(_token1).balanceOf(address(this));
+        balance0 = ISoyFinanceERC223(_token0).balanceOf(address(this));
+        balance1 = ISoyFinanceERC223(_token1).balanceOf(address(this));
 
         _update(balance0, balance1, _reserve0, _reserve1);
         if (feeOn) kLast = uint(reserve0).mul(reserve1); // reserve0 and reserve1 are up-to-date
@@ -424,8 +451,8 @@ contract SoyFinancePair is ISoyFinancePair, SoyFinanceERC223 {
         if (amount0Out > 0) _safeTransfer(_token0, to, amount0Out); // optimistically transfer tokens
         if (amount1Out > 0) _safeTransfer(_token1, to, amount1Out); // optimistically transfer tokens
         if (data.length > 0) ISoyFinanceCallee(to).soyFinanceCall(msg.sender, amount0Out, amount1Out, data);
-        balance0 = IERC20(_token0).balanceOf(address(this));
-        balance1 = IERC20(_token1).balanceOf(address(this));
+        balance0 = ISoyFinanceERC223(_token0).balanceOf(address(this));
+        balance1 = ISoyFinanceERC223(_token1).balanceOf(address(this));
         }
         uint amount0In = balance0 > _reserve0 - amount0Out ? balance0 - (_reserve0 - amount0Out) : 0;
         uint amount1In = balance1 > _reserve1 - amount1Out ? balance1 - (_reserve1 - amount1Out) : 0;
@@ -444,13 +471,18 @@ contract SoyFinancePair is ISoyFinancePair, SoyFinanceERC223 {
     function skim(address to) external lock {
         address _token0 = token0; // gas savings
         address _token1 = token1; // gas savings
-        _safeTransfer(_token0, to, IERC20(_token0).balanceOf(address(this)).sub(reserve0));
-        _safeTransfer(_token1, to, IERC20(_token1).balanceOf(address(this)).sub(reserve1));
+        _safeTransfer(_token0, to, ISoyFinanceERC223(_token0).balanceOf(address(this)).sub(reserve0));
+        _safeTransfer(_token1, to, ISoyFinanceERC223(_token1).balanceOf(address(this)).sub(reserve1));
     }
 
     // force reserves to match balances
     function sync() external lock {
-        _update(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)), reserve0, reserve1);
+        _update(ISoyFinanceERC223(token0).balanceOf(address(this)), ISoyFinanceERC223(token1).balanceOf(address(this)), reserve0, reserve1);
+    }
+
+    // ERC223 fallback
+    function tokenReceived(address /*_from*/, uint /*_value*/, bytes calldata /*_data*/) external view {
+        require(msg.sender == token0 || msg.sender == token1, "Wrong token");
     }
 }
 

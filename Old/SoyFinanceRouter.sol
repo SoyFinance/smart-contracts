@@ -1,5 +1,8 @@
-// SPDX-License-Identifier: No License (None)
-pragma solidity >=0.6.6;
+// Sources flattened with hardhat v2.2.1 https://hardhat.org
+
+// File @uniswap/lib/contracts/libraries/TransferHelper.sol@v1.1.1
+
+pragma solidity >=0.6.0;
 
 // helper methods for interacting with ERC20 tokens and sending ETH that do not consistently return true/false
 library TransferHelper {
@@ -21,11 +24,16 @@ library TransferHelper {
         require(success && (data.length == 0 || abi.decode(data, (bool))), 'TransferHelper: TRANSFER_FROM_FAILED');
     }
 
-    function safeTransferCLO(address to, uint value) internal {
+    function safeTransferETH(address to, uint value) internal {
         (bool success,) = to.call{value:value}(new bytes(0));
-        require(success, 'TransferHelper: CLO_TRANSFER_FAILED');
+        require(success, 'TransferHelper: ETH_TRANSFER_FAILED');
     }
 }
+
+
+// File contracts/interfaces/ISoyFinanceFactory.sol
+
+pragma solidity >=0.5.0;
 
 interface ISoyFinanceFactory {
     event PairCreated(address indexed token0, address indexed token1, address pair, uint);
@@ -43,6 +51,11 @@ interface ISoyFinanceFactory {
     function setFeeToSetter(address) external;
 }
 
+
+// File contracts/interfaces/ISoyFinanceRouter01.sol
+
+pragma solidity >=0.6.2;
+
 interface ISoyFinanceRouter01 {
     function factory() external pure returns (address);
     function WETH() external pure returns (address);
@@ -57,11 +70,11 @@ interface ISoyFinanceRouter01 {
         address to,
         uint deadline
     ) external returns (uint amountA, uint amountB, uint liquidity);
-    function addLiquidityCLO(
+    function addLiquidityETH(
         address token,
         uint amountTokenDesired,
         uint amountTokenMin,
-        uint amountCLOMin,
+        uint amountETHMin,
         address to,
         uint deadline
     ) external payable returns (uint amountToken, uint amountETH, uint liquidity);
@@ -74,11 +87,11 @@ interface ISoyFinanceRouter01 {
         address to,
         uint deadline
     ) external returns (uint amountA, uint amountB);
-    function removeLiquidityCLO(
+    function removeLiquidityETH(
         address token,
         uint liquidity,
         uint amountTokenMin,
-        uint amountCLOMin,
+        uint amountETHMin,
         address to,
         uint deadline
     ) external returns (uint amountToken, uint amountETH);
@@ -92,15 +105,15 @@ interface ISoyFinanceRouter01 {
         uint deadline,
         bool approveMax, uint8 v, bytes32 r, bytes32 s
     ) external returns (uint amountA, uint amountB);
-    function removeLiquidityCLOWithPermit(
+    function removeLiquidityETHWithPermit(
         address token,
         uint liquidity,
         uint amountTokenMin,
-        uint amountCLOMin,
+        uint amountETHMin,
         address to,
         uint deadline,
         bool approveMax, uint8 v, bytes32 r, bytes32 s
-    ) external returns (uint amountToken, uint amountCLO);
+    ) external returns (uint amountToken, uint amountETH);
     function swapExactTokensForTokens(
         uint amountIn,
         uint amountOutMin,
@@ -115,17 +128,17 @@ interface ISoyFinanceRouter01 {
         address to,
         uint deadline
     ) external returns (uint[] memory amounts);
-    function swapExactCLOForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline)
+    function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline)
         external
         payable
         returns (uint[] memory amounts);
-    function swapTokensForExactCLO(uint amountOut, uint amountInMax, address[] calldata path, address to, uint deadline)
+    function swapTokensForExactETH(uint amountOut, uint amountInMax, address[] calldata path, address to, uint deadline)
         external
         returns (uint[] memory amounts);
-    function swapExactTokensForCLO(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline)
+    function swapExactTokensForETH(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline)
         external
         returns (uint[] memory amounts);
-    function swapCLOForExactTokens(uint amountOut, address[] calldata path, address to, uint deadline)
+    function swapETHForExactTokens(uint amountOut, address[] calldata path, address to, uint deadline)
         external
         payable
         returns (uint[] memory amounts);
@@ -137,24 +150,29 @@ interface ISoyFinanceRouter01 {
     function getAmountsIn(uint amountOut, address[] calldata path) external view returns (uint[] memory amounts);
 }
 
+
+// File contracts/interfaces/ISoyFinanceRouter02.sol
+
+pragma solidity >=0.6.2;
+
 interface ISoyFinanceRouter02 is ISoyFinanceRouter01 {
-    function removeLiquidityCLOSupportingFeeOnTransferTokens(
+    function removeLiquidityETHSupportingFeeOnTransferTokens(
         address token,
         uint liquidity,
         uint amountTokenMin,
-        uint amountCLOMin,
+        uint amountETHMin,
         address to,
         uint deadline
-    ) external returns (uint amountCLO);
-    function removeLiquidityCLOWithPermitSupportingFeeOnTransferTokens(
+    ) external returns (uint amountETH);
+    function removeLiquidityETHWithPermitSupportingFeeOnTransferTokens(
         address token,
         uint liquidity,
         uint amountTokenMin,
-        uint amountCLOMin,
+        uint amountETHMin,
         address to,
         uint deadline,
         bool approveMax, uint8 v, bytes32 r, bytes32 s
-    ) external returns (uint amountCLO);
+    ) external returns (uint amountETH);
 
     function swapExactTokensForTokensSupportingFeeOnTransferTokens(
         uint amountIn,
@@ -163,13 +181,13 @@ interface ISoyFinanceRouter02 is ISoyFinanceRouter01 {
         address to,
         uint deadline
     ) external;
-    function swapExactCLOForTokensSupportingFeeOnTransferTokens(
+    function swapExactETHForTokensSupportingFeeOnTransferTokens(
         uint amountOutMin,
         address[] calldata path,
         address to,
         uint deadline
     ) external payable;
-    function swapExactTokensForCLOSupportingFeeOnTransferTokens(
+    function swapExactTokensForETHSupportingFeeOnTransferTokens(
         uint amountIn,
         uint amountOutMin,
         address[] calldata path,
@@ -178,22 +196,10 @@ interface ISoyFinanceRouter02 is ISoyFinanceRouter01 {
     ) external;
 }
 
-interface ISoyFinanceRouter03 is ISoyFinanceRouter02 {
-    function swapExactERC223ForTokens(
-        uint amountIn,
-        uint amountOutMin,
-        address[] calldata path,
-        address to,
-        uint deadline
-    ) external returns (uint[] memory amounts);
-    function swapERC223ForExactTokens(
-        uint amountOut,
-        uint amountInMax,
-        address[] calldata path,
-        address to,
-        uint deadline
-    ) external returns (uint[] memory amounts);
-}
+
+// File contracts/interfaces/ISoyFinancePair.sol
+
+pragma solidity >=0.5.0;
 
 interface ISoyFinancePair {
     event Approval(address indexed owner, address indexed spender, uint value);
@@ -245,6 +251,12 @@ interface ISoyFinancePair {
 
     function initialize(address, address) external;
 }
+
+
+// File contracts/libraries/SafeMath.sol
+
+pragma solidity =0.6.6;
+
 // a library for performing overflow-safe math, courtesy of DappHub (https://github.com/dapphub/ds-math)
 
 library SafeMath {
@@ -260,6 +272,12 @@ library SafeMath {
         require(y == 0 || (z = x * y) / y == x, 'ds-math-mul-overflow');
     }
 }
+
+
+// File contracts/libraries/SoyFinanceLibrary.sol
+
+pragma solidity >=0.5.0;
+
 
 library SoyFinanceLibrary {
     using SafeMath for uint;
@@ -285,7 +303,7 @@ library SoyFinanceLibrary {
     // fetches and sorts the reserves for a pair
     function getReserves(address factory, address tokenA, address tokenB) internal view returns (uint reserveA, uint reserveB) {
         (address token0,) = sortTokens(tokenA, tokenB);
-        
+        pairFor(factory, tokenA, tokenB);
         (uint reserve0, uint reserve1,) = ISoyFinancePair(pairFor(factory, tokenA, tokenB)).getReserves();
         (reserveA, reserveB) = tokenA == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
     }
@@ -339,6 +357,11 @@ library SoyFinanceLibrary {
     }
 }
 
+
+// File contracts/interfaces/IERC20.sol
+
+pragma solidity >=0.5.0;
+
 interface IERC20 {
     event Approval(address indexed owner, address indexed spender, uint value);
     event Transfer(address indexed from, address indexed to, uint value);
@@ -355,13 +378,28 @@ interface IERC20 {
     function transferFrom(address from, address to, uint value) external returns (bool);
 }
 
+
+// File contracts/interfaces/IWETH.sol
+
+pragma solidity >=0.5.0;
+
 interface IWETH {
     function deposit() external payable;
     function transfer(address to, uint value) external returns (bool);
     function withdraw(uint) external;
 }
 
-contract SoyFinanceRouter is ISoyFinanceRouter03 {
+
+// File contracts/SoyFinanceRouter.sol
+
+pragma solidity =0.6.6;
+
+
+
+
+
+
+contract SoyFinanceRouter is ISoyFinanceRouter02 {
     using SafeMath for uint;
 
     address public immutable override factory;
@@ -375,55 +413,6 @@ contract SoyFinanceRouter is ISoyFinanceRouter03 {
     constructor(address _factory, address _WETH) public {
         factory = _factory;
         WETH = _WETH;
-    }
-
-    function tokenReceived(bytes calldata _data) external returns (bytes4, address[] memory) {
-        bytes4 sig = getSig(_data);
-        (,, address[] memory path,,) = abi.decode(_data[4:], (uint256, uint256, address[], address, uint256));
-        require(path[0] == msg.sender, "Wrong sender"); // the sender should be token contract
-        // 0x7126c542 = bytes4(keccak256(bytes('swapExactERC223ForTokens(uint256,uint256,address[],address,uint256)')));
-        // 0x76c27dc6 = bytes4(keccak256(bytes('swapERC223ForExactTokens(uint256,uint256,address[],address,uint256)')));
-        require(sig == 0x7126c542 || sig == 0x76c27dc6, "Wrong function call");
-        (bool success,) = address(this).call{value:0}(_data);
-        require(success, "ERC223 internal call failed");
-    }
-    
-    function getSig(bytes memory _data) private pure returns(bytes4 sig) {
-        assembly {
-            sig := mload(add(_data, 32))
-        }
-    }
-
-    function swapExactERC223ForTokens(
-        uint amountIn,
-        uint amountOutMin,
-        address[] calldata path,
-        address to,
-        uint deadline
-    ) external virtual override ensure(deadline) returns (uint[] memory amounts) {
-        require(msg.sender == address(this), "Trusted calls are originated from address(this) contract");
-        amounts = SoyFinanceLibrary.getAmountsOut(factory, amountIn, path);
-        require(amounts[amounts.length - 1] >= amountOutMin, 'SoyFinanceRouter: INSUFFICIENT_OUTPUT_AMOUNT');
-        TransferHelper.safeTransfer(
-            path[0], SoyFinanceLibrary.pairFor(factory, path[0], path[1]), amounts[0]
-        );
-        _swap(amounts, path, to);
-    }
-
-    function swapERC223ForExactTokens(
-        uint amountOut,
-        uint amountInMax,
-        address[] calldata path,
-        address to,
-        uint deadline
-    ) external virtual override ensure(deadline) returns (uint[] memory amounts) {
-        require(msg.sender == address(this), "Trusted calls are originated from address(this) contract");
-        amounts = SoyFinanceLibrary.getAmountsIn(factory, amountOut, path);
-        require(amounts[0] <= amountInMax, 'SoyFinanceRouter: EXCESSIVE_INPUT_AMOUNT');
-        TransferHelper.safeTransfer(
-            path[0], SoyFinanceLibrary.pairFor(factory, path[0], path[1]), amounts[0]
-        );
-        _swap(amounts, path, to);
     }
 
     receive() external payable {
@@ -475,29 +464,29 @@ contract SoyFinanceRouter is ISoyFinanceRouter03 {
         TransferHelper.safeTransferFrom(tokenB, msg.sender, pair, amountB);
         liquidity = ISoyFinancePair(pair).mint(to);
     }
-    function addLiquidityCLO(
+    function addLiquidityETH(
         address token,
         uint amountTokenDesired,
         uint amountTokenMin,
-        uint amountCLOMin,
+        uint amountETHMin,
         address to,
         uint deadline
-    ) external virtual override payable ensure(deadline) returns (uint amountToken, uint amountCLO, uint liquidity) {
-        (amountToken, amountCLO) = _addLiquidity(
+    ) external virtual override payable ensure(deadline) returns (uint amountToken, uint amountETH, uint liquidity) {
+        (amountToken, amountETH) = _addLiquidity(
             token,
             WETH,
             amountTokenDesired,
             msg.value,
             amountTokenMin,
-            amountCLOMin
+            amountETHMin
         );
         address pair = SoyFinanceLibrary.pairFor(factory, token, WETH);
         TransferHelper.safeTransferFrom(token, msg.sender, pair, amountToken);
-        IWETH(WETH).deposit{value: amountCLO}();
-        assert(IWETH(WETH).transfer(pair, amountCLO));
+        IWETH(WETH).deposit{value: amountETH}();
+        assert(IWETH(WETH).transfer(pair, amountETH));
         liquidity = ISoyFinancePair(pair).mint(to);
         // refund dust eth, if any
-        if (msg.value > amountCLO) TransferHelper.safeTransferCLO(msg.sender, msg.value - amountCLO);
+        if (msg.value > amountETH) TransferHelper.safeTransferETH(msg.sender, msg.value - amountETH);
     }
 
     // **** REMOVE LIQUIDITY ****
@@ -518,15 +507,15 @@ contract SoyFinanceRouter is ISoyFinanceRouter03 {
         require(amountA >= amountAMin, 'SoyFinanceRouter: INSUFFICIENT_A_AMOUNT');
         require(amountB >= amountBMin, 'SoyFinanceRouter: INSUFFICIENT_B_AMOUNT');
     }
-    function removeLiquidityCLO(
+    function removeLiquidityETH(
         address token,
         uint liquidity,
         uint amountTokenMin,
         uint amountETHMin,
         address to,
         uint deadline
-    ) public virtual override ensure(deadline) returns (uint amountToken, uint amountCLO) {
-        (amountToken, amountCLO) = removeLiquidity(
+    ) public virtual override ensure(deadline) returns (uint amountToken, uint amountETH) {
+        (amountToken, amountETH) = removeLiquidity(
             token,
             WETH,
             liquidity,
@@ -536,8 +525,8 @@ contract SoyFinanceRouter is ISoyFinanceRouter03 {
             deadline
         );
         TransferHelper.safeTransfer(token, to, amountToken);
-        IWETH(WETH).withdraw(amountCLO);
-        TransferHelper.safeTransferCLO(to, amountCLO);
+        IWETH(WETH).withdraw(amountETH);
+        TransferHelper.safeTransferETH(to, amountETH);
     }
     function removeLiquidityWithPermit(
         address tokenA,
@@ -554,48 +543,48 @@ contract SoyFinanceRouter is ISoyFinanceRouter03 {
         ISoyFinancePair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
         (amountA, amountB) = removeLiquidity(tokenA, tokenB, liquidity, amountAMin, amountBMin, to, deadline);
     }
-    function removeLiquidityCLOWithPermit(
+    function removeLiquidityETHWithPermit(
         address token,
         uint liquidity,
         uint amountTokenMin,
-        uint amountCLOMin,
+        uint amountETHMin,
         address to,
         uint deadline,
         bool approveMax, uint8 v, bytes32 r, bytes32 s
-    ) external virtual override returns (uint amountToken, uint amountCLO) {
+    ) external virtual override returns (uint amountToken, uint amountETH) {
         address pair = SoyFinanceLibrary.pairFor(factory, token, WETH);
         uint value = approveMax ? uint(-1) : liquidity;
         ISoyFinancePair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
-        (amountToken, amountCLO) = removeLiquidityCLO(token, liquidity, amountTokenMin, amountCLOMin, to, deadline);
+        (amountToken, amountETH) = removeLiquidityETH(token, liquidity, amountTokenMin, amountETHMin, to, deadline);
     }
 
     // **** REMOVE LIQUIDITY (supporting fee-on-transfer tokens) ****
-    function removeLiquidityCLOSupportingFeeOnTransferTokens(
+    function removeLiquidityETHSupportingFeeOnTransferTokens(
         address token,
         uint liquidity,
         uint amountTokenMin,
-        uint amountCLOMin,
+        uint amountETHMin,
         address to,
         uint deadline
-    ) public virtual override ensure(deadline) returns (uint amountCLO) {
-        (, amountCLO) = removeLiquidity(
+    ) public virtual override ensure(deadline) returns (uint amountETH) {
+        (, amountETH) = removeLiquidity(
             token,
             WETH,
             liquidity,
             amountTokenMin,
-            amountCLOMin,
+            amountETHMin,
             address(this),
             deadline
         );
         TransferHelper.safeTransfer(token, to, IERC20(token).balanceOf(address(this)));
-        IWETH(WETH).withdraw(amountCLO);
-        TransferHelper.safeTransferCLO(to, amountCLO);
+        IWETH(WETH).withdraw(amountETH);
+        TransferHelper.safeTransferETH(to, amountETH);
     }
-    function removeLiquidityCLOWithPermitSupportingFeeOnTransferTokens(
+    function removeLiquidityETHWithPermitSupportingFeeOnTransferTokens(
         address token,
         uint liquidity,
         uint amountTokenMin,
-        uint amountCLOMin,
+        uint amountETHMin,
         address to,
         uint deadline,
         bool approveMax, uint8 v, bytes32 r, bytes32 s
@@ -603,8 +592,8 @@ contract SoyFinanceRouter is ISoyFinanceRouter03 {
         address pair = SoyFinanceLibrary.pairFor(factory, token, WETH);
         uint value = approveMax ? uint(-1) : liquidity;
         ISoyFinancePair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
-        amountETH = removeLiquidityCLOSupportingFeeOnTransferTokens(
-            token, liquidity, amountTokenMin, amountCLOMin, to, deadline
+        amountETH = removeLiquidityETHSupportingFeeOnTransferTokens(
+            token, liquidity, amountTokenMin, amountETHMin, to, deadline
         );
     }
 
@@ -650,7 +639,7 @@ contract SoyFinanceRouter is ISoyFinanceRouter03 {
         );
         _swap(amounts, path, to);
     }
-    function swapExactCLOForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline)
+    function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline)
         external
         virtual
         override
@@ -665,7 +654,7 @@ contract SoyFinanceRouter is ISoyFinanceRouter03 {
         assert(IWETH(WETH).transfer(SoyFinanceLibrary.pairFor(factory, path[0], path[1]), amounts[0]));
         _swap(amounts, path, to);
     }
-    function swapTokensForExactCLO(uint amountOut, uint amountInMax, address[] calldata path, address to, uint deadline)
+    function swapTokensForExactETH(uint amountOut, uint amountInMax, address[] calldata path, address to, uint deadline)
         external
         virtual
         override
@@ -680,9 +669,9 @@ contract SoyFinanceRouter is ISoyFinanceRouter03 {
         );
         _swap(amounts, path, address(this));
         IWETH(WETH).withdraw(amounts[amounts.length - 1]);
-        TransferHelper.safeTransferCLO(to, amounts[amounts.length - 1]);
+        TransferHelper.safeTransferETH(to, amounts[amounts.length - 1]);
     }
-    function swapExactTokensForCLO(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline)
+    function swapExactTokensForETH(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline)
         external
         virtual
         override
@@ -697,9 +686,9 @@ contract SoyFinanceRouter is ISoyFinanceRouter03 {
         );
         _swap(amounts, path, address(this));
         IWETH(WETH).withdraw(amounts[amounts.length - 1]);
-        TransferHelper.safeTransferCLO(to, amounts[amounts.length - 1]);
+        TransferHelper.safeTransferETH(to, amounts[amounts.length - 1]);
     }
-    function swapCLOForExactTokens(uint amountOut, address[] calldata path, address to, uint deadline)
+    function swapETHForExactTokens(uint amountOut, address[] calldata path, address to, uint deadline)
         external
         virtual
         override
@@ -714,7 +703,7 @@ contract SoyFinanceRouter is ISoyFinanceRouter03 {
         assert(IWETH(WETH).transfer(SoyFinanceLibrary.pairFor(factory, path[0], path[1]), amounts[0]));
         _swap(amounts, path, to);
         // refund dust eth, if any
-        if (msg.value > amounts[0]) TransferHelper.safeTransferCLO(msg.sender, msg.value - amounts[0]);
+        if (msg.value > amounts[0]) TransferHelper.safeTransferETH(msg.sender, msg.value - amounts[0]);
     }
 
     // **** SWAP (supporting fee-on-transfer tokens) ****
@@ -744,7 +733,6 @@ contract SoyFinanceRouter is ISoyFinanceRouter03 {
         address to,
         uint deadline
     ) external virtual override ensure(deadline) {
-        require(path.length > 1, 'SoyFinanceRouter: INVALID_PATH');        
         TransferHelper.safeTransferFrom(
             path[0], msg.sender, SoyFinanceLibrary.pairFor(factory, path[0], path[1]), amountIn
         );
@@ -755,7 +743,7 @@ contract SoyFinanceRouter is ISoyFinanceRouter03 {
             'SoyFinanceRouter: INSUFFICIENT_OUTPUT_AMOUNT'
         );
     }
-    function swapExactCLOForTokensSupportingFeeOnTransferTokens(
+    function swapExactETHForTokensSupportingFeeOnTransferTokens(
         uint amountOutMin,
         address[] calldata path,
         address to,
@@ -767,7 +755,6 @@ contract SoyFinanceRouter is ISoyFinanceRouter03 {
         payable
         ensure(deadline)
     {
-        require(path.length > 1, 'SoyFinanceRouter: INVALID_PATH');        
         require(path[0] == WETH, 'SoyFinanceRouter: INVALID_PATH');
         uint amountIn = msg.value;
         IWETH(WETH).deposit{value: amountIn}();
@@ -779,7 +766,7 @@ contract SoyFinanceRouter is ISoyFinanceRouter03 {
             'SoyFinanceRouter: INSUFFICIENT_OUTPUT_AMOUNT'
         );
     }
-    function swapExactTokensForCLOSupportingFeeOnTransferTokens(
+    function swapExactTokensForETHSupportingFeeOnTransferTokens(
         uint amountIn,
         uint amountOutMin,
         address[] calldata path,
@@ -791,7 +778,6 @@ contract SoyFinanceRouter is ISoyFinanceRouter03 {
         override
         ensure(deadline)
     {
-        require(path.length > 1, 'SoyFinanceRouter: INVALID_PATH');        
         require(path[path.length - 1] == WETH, 'SoyFinanceRouter: INVALID_PATH');
         TransferHelper.safeTransferFrom(
             path[0], msg.sender, SoyFinanceLibrary.pairFor(factory, path[0], path[1]), amountIn
@@ -800,7 +786,7 @@ contract SoyFinanceRouter is ISoyFinanceRouter03 {
         uint amountOut = IERC20(WETH).balanceOf(address(this));
         require(amountOut >= amountOutMin, 'SoyFinanceRouter: INSUFFICIENT_OUTPUT_AMOUNT');
         IWETH(WETH).withdraw(amountOut);
-        TransferHelper.safeTransferCLO(to, amountOut);
+        TransferHelper.safeTransferETH(to, amountOut);
     }
 
     // **** LIBRARY FUNCTIONS ****
