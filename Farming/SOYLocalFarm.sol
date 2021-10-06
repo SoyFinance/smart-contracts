@@ -258,9 +258,7 @@ contract SOYLocalFarm is IERC223Recipient, ReentrancyGuard, RewardsRecipient, Ow
     
     bool public active = false;
     
-    uint256 public activeEpoch;
-    
-    uint256 public limitAmount = 100000 * 1e18; // Check correctness!
+    uint256 public limitAmount = 1000000 * 1e18; // Check correctness!
     
     IERC223 public rewardsToken;
     IERC223 public lpToken;
