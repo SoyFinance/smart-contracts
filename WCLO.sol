@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: No License (None)
 // Copyright (C) 2015, 2016, 2017 Dapphub
 
 // This program is free software: you can redistribute it and/or modify
@@ -13,22 +14,53 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-pragma solidity ^0.4.18;
+pragma solidity ^0.8.0;
 
-contract WCLO9 {
+library Address {
+    /**
+     * @dev Returns true if `account` is a contract.
+     *
+     * This test is non-exhaustive, and there may be false-negatives: during the
+     * execution of a contract's constructor, its address will be reported as
+     * not containing a contract.
+     *
+     * > It is unsafe to assume that an address for which this function returns
+     * false is an externally-owned account (EOA) and not a contract.
+     */
+    function isContract(address account) internal view returns (bool) {
+        // This method relies in extcodesize, which returns 0 for contracts in
+        // construction, since the code is only stored at the end of the
+        // constructor execution.
+
+        uint256 size;
+        // solhint-disable-next-line no-inline-assembly
+        assembly { size := extcodesize(account) }
+        return size > 0;
+    }
+}
+
+interface IERC223Recipient {
+    function tokenReceived(address _from, uint _value, bytes calldata _data) external;
+}
+
+contract WCLO_ERC223 {
+    using Address for address;
+
     string public name     = "Wrapped CLO";
     string public symbol   = "WCLO";
+    string public constant standard = 'erc223';
     uint8  public decimals = 18;
 
     event  Approval(address indexed src, address indexed guy, uint wad);
     event  Transfer(address indexed src, address indexed dst, uint wad);
     event  Deposit(address indexed dst, uint wad);
     event  Withdrawal(address indexed src, uint wad);
+    event  TransferData(bytes data);
 
     mapping (address => uint)                       public  balanceOf;
     mapping (address => mapping (address => uint))  public  allowance;
 
-    function() public payable {
+    receive() external payable {
         deposit();
     }
     function deposit() public payable {
@@ -36,14 +68,13 @@ contract WCLO9 {
         Deposit(msg.sender, msg.value);
     }
     function withdraw(uint wad) public {
-        require(balanceOf[msg.sender] >= wad);
         balanceOf[msg.sender] -= wad;
-        msg.sender.transfer(wad);
+        payable(msg.sender).transfer(wad);
         Withdrawal(msg.sender, wad);
     }
 
     function totalSupply() public view returns (uint) {
-        return this.balance;
+        return address(this).balance;
     }
 
     function approve(address guy, uint wad) public returns (bool) {
@@ -52,18 +83,31 @@ contract WCLO9 {
         return true;
     }
 
-    function transfer(address dst, uint wad) public returns (bool) {
-        return transferFrom(msg.sender, dst, wad);
+    function transfer(address to, uint value) external returns (bool) {
+        bytes memory _empty = hex"00000000";
+         transferFrom(msg.sender, to, value);
+        
+        if(to.isContract()) {
+            IERC223Recipient(to).tokenReceived(msg.sender, value, _empty);
+        }
+        emit TransferData(_empty);
+        return true;
+    }
+    
+    function transfer(address to, uint value, bytes calldata data) external returns (bool) {
+        transferFrom(msg.sender, to, value);
+        if(to.isContract()) {
+            IERC223Recipient(to).tokenReceived(msg.sender, value, data);
+        }
+        emit TransferData(data);
+        return true;
     }
 
     function transferFrom(address src, address dst, uint wad)
         public
         returns (bool)
     {
-        require(balanceOf[src] >= wad);
-
         if (src != msg.sender && allowance[src][msg.sender] != uint(-1)) {
-            require(allowance[src][msg.sender] >= wad);
             allowance[src][msg.sender] -= wad;
         }
 
@@ -73,6 +117,14 @@ contract WCLO9 {
         Transfer(src, dst, wad);
 
         return true;
+    }
+
+    function tokenReceived(address _from, uint _value, bytes memory /*_data*/) external virtual {
+        require(msg.sender == address(this), "Only when transfer WCLO");
+        // withdraw CLO
+        balanceOf[_from] -= _value;
+        payable(_from).transfer(_value);
+        Withdrawal(_from, _value);
     }
 }
 
