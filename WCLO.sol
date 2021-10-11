@@ -46,10 +46,10 @@ interface IERC223Recipient {
 contract WCLO_ERC223 {
     using Address for address;
 
-    string public name     = "Wrapped CLO";
-    string public symbol   = "WCLO";
+    string public constant name     = "Wrapped CLO";
+    string public constant symbol   = "WCLO";
     string public constant standard = 'erc223';
-    uint8  public decimals = 18;
+    uint8  public constant decimals = 18;
 
     event  Approval(address indexed src, address indexed guy, uint wad);
     event  Transfer(address indexed src, address indexed dst, uint wad);
@@ -65,12 +65,12 @@ contract WCLO_ERC223 {
     }
     function deposit() public payable {
         balanceOf[msg.sender] += msg.value;
-        Deposit(msg.sender, msg.value);
+        emit Deposit(msg.sender, msg.value);
     }
     function withdraw(uint wad) public {
         balanceOf[msg.sender] -= wad;
         payable(msg.sender).transfer(wad);
-        Withdrawal(msg.sender, wad);
+        emit Withdrawal(msg.sender, wad);
     }
 
     function totalSupply() public view returns (uint) {
@@ -79,13 +79,13 @@ contract WCLO_ERC223 {
 
     function approve(address guy, uint wad) public returns (bool) {
         allowance[msg.sender][guy] = wad;
-        Approval(msg.sender, guy, wad);
+        emit Approval(msg.sender, guy, wad);
         return true;
     }
 
     function transfer(address to, uint value) external returns (bool) {
         bytes memory _empty = hex"00000000";
-         transferFrom(msg.sender, to, value);
+        transferFrom(msg.sender, to, value);
         
         if(to.isContract()) {
             IERC223Recipient(to).tokenReceived(msg.sender, value, _empty);
@@ -107,24 +107,24 @@ contract WCLO_ERC223 {
         public
         returns (bool)
     {
-        if (src != msg.sender && allowance[src][msg.sender] != uint(-1)) {
+        if (src != msg.sender && allowance[src][msg.sender] != uint(int(-1))) {
             allowance[src][msg.sender] -= wad;
         }
 
         balanceOf[src] -= wad;
         balanceOf[dst] += wad;
 
-        Transfer(src, dst, wad);
+        emit Transfer(src, dst, wad);
 
         return true;
     }
 
-    function tokenReceived(address _from, uint _value, bytes memory /*_data*/) external virtual {
+    function tokenReceived(address _from, uint _value, bytes memory /*_data*/) external {
         require(msg.sender == address(this), "Only when transfer WCLO");
         // withdraw CLO
         balanceOf[_from] -= _value;
         payable(_from).transfer(_value);
-        Withdrawal(_from, _value);
+        emit Withdrawal(_from, _value);
     }
 }
 
