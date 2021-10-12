@@ -34,9 +34,6 @@ abstract contract Context {
     }
 }
 
-// File: @openzeppelin/contracts/token/ERC20/IERC20.sol
-
-
 abstract contract MinterDebugging {
     bool public debug_mode = true;
     mapping (address => bool) public minters;
@@ -124,6 +121,7 @@ interface IERC223 {
      * Note that `value` may be zero.
      */
     event Transfer(address indexed from, address indexed to, uint256 value);
+    event TransferData(bytes);
 
     /**
      * @dev Emitted when the allowance of a `spender` for an `owner` is set by
@@ -271,13 +269,6 @@ library Address {
     }
 }
 
-// File: @openzeppelin/contracts/token/ERC20/ERC20.sol
-
-
-
-
-
-
 /**
  * @dev Implementation of the {IERC20} interface.
  *
@@ -328,6 +319,11 @@ contract ERC223 is Context, IERC223, MinterDebugging {
         _name = new_name;
         _symbol = new_symbol;
         _decimals = 18;
+    }
+    
+    function standard() public pure returns (string memory)
+    {
+        return "erc223";
     }
 
     /**
@@ -495,15 +491,16 @@ contract ERC223 is Context, IERC223, MinterDebugging {
         require(recipient != address(0), "ERC223: transfer to the zero address");
 
         _beforeTokenTransfer(sender, recipient, amount);
+
+        _balances[sender] = _balances[sender] - amount;
+        _balances[recipient] = _balances[recipient] + amount;
         
         if(recipient.isContract())
         {
             IERC223Recipient(recipient).tokenReceived(sender, amount, data);
         }
-
-        _balances[sender] = _balances[sender] - amount;
-        _balances[recipient] = _balances[recipient] + amount;
         emit Transfer(sender, recipient, amount);
+        emit TransferData(data);
     }
     
     function _transferFrom(address sender, address recipient, uint256 amount) internal virtual {
@@ -606,11 +603,6 @@ contract ERC223 is Context, IERC223, MinterDebugging {
     function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual { }
 }
 
-// File: @openzeppelin/contracts/access/Ownable.sol
-
-
-
-
 
 /**
  * @dev Contract module which provides a basic access control mechanism, where
@@ -680,6 +672,11 @@ contract Ownable is Context {
 
 // SoyToken with Governance.
 contract SoyToken is ERC223("SOY Finance token", "SOY"), Ownable {
+    function rescueERC20(address token, address to) external onlyOwner {
+        uint256 value = IERC223(token).balanceOf(address(this));
+        IERC223(token).transfer(to, value);
+    }
+    
     // @notice Creates `_amount` token to `_to`. Must only be called by the owner (MasterChef).
     function mint(address _to, uint256 _amount) public onlyMinter {
         _mint(_to, _amount);
