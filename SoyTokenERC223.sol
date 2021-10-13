@@ -34,8 +34,8 @@ abstract contract Context {
     }
 }
 
-abstract contract MinterDebugging {
-    bool public debug_mode = true;
+abstract contract MinterSetup {
+    bool public setup_mode = true;
     mapping (address => bool) public minters;
     
     modifier onlyMinter()
@@ -44,9 +44,9 @@ abstract contract MinterDebugging {
         _;
     }
     
-    modifier onlyDebugMode()
+    modifier onlySetupMode()
     {
-        require(debug_mode, "This is only allowed in debug mode");
+        require(setup_mode, "This is only allowed in setup mode");
         _;
     }
 }
@@ -293,7 +293,7 @@ library Address {
  * functions have been added to mitigate the well-known issues around setting
  * allowances. See {IERC20-approve}.
  */
-contract ERC223 is Context, IERC223, MinterDebugging {
+contract ERC223 is Context, IERC223, MinterSetup {
     using Address for address;
 
     mapping (address => uint256) private _balances;
@@ -617,7 +617,7 @@ contract ERC223 is Context, IERC223, MinterDebugging {
  * the owner.
  */
 contract Ownable is Context {
-    address public _owner;
+    address internal _owner;
 
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
@@ -719,7 +719,9 @@ contract SoyToken is ERC223("SOY Finance token", "SOY"), Ownable {
     // An event thats emitted when a delegate account's vote balance changes
     event DelegateVotesChanged(address indexed delegate, uint previousBalance, uint newBalance);
     
-    
+    // An event thats emitted when assign a minter
+    event AssignMinter(address minter, bool status);
+
     constructor() {
         address msgSender = _msgSender();
         _owner = 0x6A56D0f7498C9f2AEb9Bb6892Ade5b2E0A50379F;  // Hardcoded the address of the OWNER MULTISIG of Callisto team on CLO chain (820 id)
@@ -728,14 +730,15 @@ contract SoyToken is ERC223("SOY Finance token", "SOY"), Ownable {
         emit OwnershipTransferred(address(0), msgSender);
     }
     
-    function assignMinter(address _minter, bool _status) public onlyOwner onlyDebugMode
+    function assignMinter(address _minter, bool _status) public onlyOwner onlySetupMode
     {
         minters[_minter] = _status;
+        emit AssignMinter(_minter, _status);
     }
     
-    function disableDebug() public onlyOwner onlyDebugMode
+    function disableSetup() public onlyOwner onlySetupMode
     {
-        debug_mode = false;
+        setup_mode = false;
     }
 
     /**
