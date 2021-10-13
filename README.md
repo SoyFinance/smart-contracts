@@ -9,3 +9,11 @@
 - Multicall contract [0x8bA3D23241c7044bE703afAF2A728FdBc16f5F6f](https://explorer.callisto.network/address/0x8bA3D23241c7044bE703afAF2A728FdBc16f5F6f/contracts)
 
 # Deployed contracts / SOY Phase 1.5 - ERC223 & Farming
+
+## Test net 
+
+- SOY ERC223 token [0x4c20231BCc5dB8D805DB9197C84c8BA8287CbA92](https://testnet-explorer.callisto.network/address/0x4c20231BCc5dB8D805DB9197C84c8BA8287CbA92/contracts)
+- WCLO ERC223 (wrapped CLO) token [0xbd2D3BCe975FD72E44A73cC8e834aD1B8441BdDa](https://testnet-explorer.callisto.network/address/0xbd2D3BCe975FD72E44A73cC8e834aD1B8441BdDa/contracts)
+- SoyFinanceFactory [0x9D43dd4C1Ef8384c070Bfd05615142F55EFBD89f](https://testnet-explorer.callisto.network/address/0x9D43dd4C1Ef8384c070Bfd05615142F55EFBD89f/contracts)
+- SoyFinanceRouter [0xdbe46b17FFd35D6865b69F9398AC5454389BF38c](https://testnet-explorer.callisto.network/address/0xdbe46b17FFd35D6865b69F9398AC5454389BF38c/contracts)
+- Multicall contract [0x38920A03c3Aa13E19c87777ef0443C54FaAD1992](https://testnet-explorer.callisto.network/address/0x38920A03c3Aa13E19c87777ef0443C54FaAD1992/contracts)
