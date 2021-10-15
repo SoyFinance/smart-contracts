@@ -261,9 +261,8 @@ contract SOYLocalFarm is IERC223Recipient, ReentrancyGuard, RewardsRecipient, Ow
     IERC223 public rewardsToken;
     IERC223 public lpToken;
     
-    //uint256 allocPoint;       // How many allocation points assigned to this  CAKEs to distribute per block.
-    uint256 public lastRewardTimestamp;  // Last block number that CAKEs distribution occurs.
-    uint256 public accumulatedRewardPerShare; // Accumulated CAKEs per share, times 1e12. See below.
+    uint256 public lastRewardTimestamp;  // Last block number that SOY distribution occurs.
+    uint256 public accumulatedRewardPerShare; // Accumulated SOY per share, times 1e18. See below.
 
     /* ========== CONSTRUCTOR ========== */
 
