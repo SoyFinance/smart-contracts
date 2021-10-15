@@ -17,6 +17,10 @@
 - SoyFinanceRouter [0x7371586d1e27b739b4A582f38240327b1881F445](https://explorer.callisto.network/address/0x7371586d1e27b739b4A582f38240327b1881F445/contracts)
 - AirdropSoy contract ([AirdropSoy.sol](https://github.com/SoyFinance/smart-contracts/blob/main/AirdropSoy.sol)) []()
 
+
+- SOY (ERC223) Token 0x9FaE2529863bD691B4A7171bDfCf33C7ebB10a65: https://explorer.callisto.network/address/0x9FaE2529863bD691B4A7171bDfCf33C7ebB10a65/transactions
+- Global Farm contract 0x64Fa36ACD0d13472FD786B03afC9C52aD5FCf023: https://explorer.callisto.network/address/0x64Fa36ACD0d13472FD786B03afC9C52aD5FCf023/transactions
+
 ## Test net 
 
 - SOY ERC223 token [0x4c20231BCc5dB8D805DB9197C84c8BA8287CbA92](https://testnet-explorer.callisto.network/address/0x4c20231BCc5dB8D805DB9197C84c8BA8287CbA92/contracts)
