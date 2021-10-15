@@ -397,8 +397,10 @@ contract SoyFinanceRouter is ISoyFinanceRouter02 {
             balanceERC223[sender][token] = 0;
             if (rest != 0) TransferHelper.safeTransfer(token, sender, rest); // refund rest of tokens to sender
             TransferHelper.safeTransfer(token, to, amount);
+        } else if (msg.sender != address(this)) {   // not ERC223 callback
+            TransferHelper.safeTransferFrom(token, msg.sender, to, amount);
         } else {
-            TransferHelper.safeTransferFrom(token, sender, to, amount);
+            revert("Not enough ERC223 balance");
         }
     }
 
