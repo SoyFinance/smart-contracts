@@ -189,7 +189,6 @@ contract GlobalFarm is Ownable {
 
     function removeLocalFarmByAddress(address _localFarmAddress) external onlyOwner {
         require (farmExists(_localFarmAddress), "LocalFarm with this address does not exist");
-        require (localFarmId[_localFarmAddress] != 0, "LocalFarm with this address does not exist"); 
         
         totalMultipliers = totalMultipliers - uint256(localFarms[localFarmId[_localFarmAddress]].multiplier); // update totalMultipliers
         
