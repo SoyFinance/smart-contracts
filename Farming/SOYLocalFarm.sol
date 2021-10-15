@@ -256,7 +256,7 @@ contract SOYLocalFarm is IERC223Recipient, ReentrancyGuard, RewardsRecipient, Ow
     // Info of each user that stakes LP tokens.
     mapping (address => UserInfo) public userInfo;
     
-    uint256 public limitAmount = 1000000 * 1e18; // Check correctness!
+    uint256 public limitAmount = 1e40; // Prevents accumulatedRewardPerShare from overflowing.
     
     IERC223 public rewardsToken;
     IERC223 public lpToken;
