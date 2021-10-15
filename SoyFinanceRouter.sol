@@ -351,6 +351,9 @@ contract SoyFinanceRouter is ISoyFinanceRouter02 {
     address public immutable override WCLO;
     mapping(address => mapping(address => uint)) public balanceERC223;    // user => token => value
     address public msgSender;   // ERC223 sender
+    event Swap(address _sender, address _tokenIn, address _tokenOut, uint _amountIn, uint _amountOut);
+    event AddLiquidity(address _sender, address _tokenA, address _tokenB, uint _amountA, uint _amountB);
+    event RemoveLiquidity(address _sender, address _tokenA, address _tokenB, uint _amountA, uint _amountB);
 
     modifier ensure(uint deadline) {
         require(deadline >= block.timestamp, 'SoyFinanceRouter: EXPIRED');
@@ -394,10 +397,8 @@ contract SoyFinanceRouter is ISoyFinanceRouter02 {
             balanceERC223[sender][token] = 0;
             if (rest != 0) TransferHelper.safeTransfer(token, sender, rest); // refund rest of tokens to sender
             TransferHelper.safeTransfer(token, to, amount);
-        } else if (msg.sender != address(this)) {   // not ERC223 callback
-            TransferHelper.safeTransferFrom(token, msg.sender, to, amount);
         } else {
-            revert("Not enough ERC223 balance");
+            TransferHelper.safeTransferFrom(token, sender, to, amount);
         }
     }
 
@@ -433,6 +434,7 @@ contract SoyFinanceRouter is ISoyFinanceRouter02 {
                 (amountA, amountB) = (amountAOptimal, amountBDesired);
             }
         }
+        emit AddLiquidity(tx.origin, tokenA, tokenB, amountA, amountB);
     }
     function addLiquidity(
         address tokenA,
@@ -493,6 +495,7 @@ contract SoyFinanceRouter is ISoyFinanceRouter02 {
         (amountA, amountB) = tokenA == token0 ? (amount0, amount1) : (amount1, amount0);
         require(amountA >= amountAMin, 'SoyFinanceRouter: INSUFFICIENT_A_AMOUNT');
         require(amountB >= amountBMin, 'SoyFinanceRouter: INSUFFICIENT_B_AMOUNT');
+        emit RemoveLiquidity(tx.origin, tokenA, tokenB, amountA, amountB);
     }
     function removeLiquidityCLO(
         address token,
@@ -597,6 +600,7 @@ contract SoyFinanceRouter is ISoyFinanceRouter02 {
                 amount0Out, amount1Out, to, new bytes(0)
             );
         }
+        emit Swap(tx.origin, path[0], path[path.length - 1], amounts[0], amounts[amounts.length - 1]);
     }
     function swapExactTokensForTokens(
         uint amountIn,
@@ -728,10 +732,12 @@ contract SoyFinanceRouter is ISoyFinanceRouter02 {
         );
         uint balanceBefore = IERC223(path[path.length - 1]).balanceOf(to);
         _swapSupportingFeeOnTransferTokens(path, to);
+        uint amountOut = IERC223(path[path.length - 1]).balanceOf(to).sub(balanceBefore);
         require(
-            IERC223(path[path.length - 1]).balanceOf(to).sub(balanceBefore) >= amountOutMin,
+            amountOut >= amountOutMin,
             'SoyFinanceRouter: INSUFFICIENT_OUTPUT_AMOUNT'
-        );
+        );        
+        emit Swap(tx.origin, path[0], path[path.length - 1], amountIn, amountOut);
     }
     function swapExactCLOForTokensSupportingFeeOnTransferTokens(
         uint amountOutMin,
@@ -753,10 +759,12 @@ contract SoyFinanceRouter is ISoyFinanceRouter02 {
         assert(IWCLO(WCLO).transfer(SoyFinanceLibrary.pairFor(factory, path[0], path[1]), amountIn));
         uint balanceBefore = IERC223(path[path.length - 1]).balanceOf(to);
         _swapSupportingFeeOnTransferTokens(path, to);
+        uint amountOut = IERC223(path[path.length - 1]).balanceOf(to).sub(balanceBefore);
         require(
-            IERC223(path[path.length - 1]).balanceOf(to).sub(balanceBefore) >= amountOutMin,
+            amountOut >= amountOutMin,
             'SoyFinanceRouter: INSUFFICIENT_OUTPUT_AMOUNT'
         );
+        emit Swap(tx.origin, path[0], path[path.length - 1], amountIn, amountOut);
     }
     function swapExactTokensForCLOSupportingFeeOnTransferTokens(
         uint amountIn,
@@ -780,6 +788,7 @@ contract SoyFinanceRouter is ISoyFinanceRouter02 {
         require(amountOut >= amountOutMin, 'SoyFinanceRouter: INSUFFICIENT_OUTPUT_AMOUNT');
         IWCLO(WCLO).withdraw(amountOut);
         TransferHelper.safeTransferCLO(to, amountOut);
+        emit Swap(tx.origin, path[0], path[path.length - 1], amountIn, amountOut);
     }
 
     // **** LIBRARY FUNCTIONS ****
