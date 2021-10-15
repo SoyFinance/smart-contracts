@@ -256,14 +256,13 @@ contract SOYLocalFarm is IERC223Recipient, ReentrancyGuard, RewardsRecipient, Ow
     // Info of each user that stakes LP tokens.
     mapping (address => UserInfo) public userInfo;
     
-    uint256 public limitAmount = 1000000 * 1e18; // Check correctness!
+    uint256 public limitAmount = 1e40; // Prevents accumulatedRewardPerShare from overflowing.
     
     IERC223 public rewardsToken;
     IERC223 public lpToken;
     
-    //uint256 allocPoint;       // How many allocation points assigned to this  CAKEs to distribute per block.
-    uint256 public lastRewardTimestamp;  // Last block number that CAKEs distribution occurs.
-    uint256 public accumulatedRewardPerShare; // Accumulated CAKEs per share, times 1e12. See below.
+    uint256 public lastRewardTimestamp;  // Last block number that SOY distribution occurs.
+    uint256 public accumulatedRewardPerShare; // Accumulated SOY per share, times 1e18. See below.
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -283,11 +282,7 @@ contract SOYLocalFarm is IERC223Recipient, ReentrancyGuard, RewardsRecipient, Ow
     // Analogue of deposit() function.
     function tokenReceived(address _from, uint256 _amount, bytes memory _data) public override nonReentrant
     {
-        _data; // Stupid warning silencer.
-        
         require(msg.sender == address(lpToken), "Trying to deposit wrong token");
-        
-        //UserInfo storage user = userInfo[_from];
         require(userInfo[_from].amount + _amount <= limitAmount, 'exceed the top');
 
         update();
@@ -331,8 +326,6 @@ contract SOYLocalFarm is IERC223Recipient, ReentrancyGuard, RewardsRecipient, Ow
         if (block.timestamp > lastRewardTimestamp && lpSupply != 0) {
             uint256 multiplier = block.timestamp - lastRewardTimestamp;
             uint256 _reward = multiplier * getRewardPerSecond() * getAllocationX1000() / 1000;
-            //accumulatedRewardPerShare = accCakePerShare.add(cakeReward.mul(1e12).div(lpSupply));
-            
             _accumulatedRewardPerShare = accumulatedRewardPerShare + (_reward * 1e18 / lpSupply);
         }
         return user.amount * _accumulatedRewardPerShare / 1e18 - user.rewardDebt;
@@ -351,13 +344,6 @@ contract SOYLocalFarm is IERC223Recipient, ReentrancyGuard, RewardsRecipient, Ow
             lastRewardTimestamp = block.timestamp;
             return;
         }
-        
-        /*
-        if (!active) {
-            lastRewardTimestamp = block.timestamp;
-            active = true;
-            return;
-        } */
         uint256 multiplier = block.timestamp - lastRewardTimestamp;
         
         // This silently calculates "assumed" reward!
@@ -426,5 +412,11 @@ contract SOYLocalFarm is IERC223Recipient, ReentrancyGuard, RewardsRecipient, Ow
         _;
     }
     
-    
+    function rescueERC20(address token, address to) external onlyOwner {
+        require(token != address(rewardsToken), "Reward token is not prone to ERC20 issues");
+        require(token != address(lpToken), "LP token is not prone to ERC20 issues");
+        
+        uint256 value = IERC223(token).balanceOf(address(this));
+        IERC223(token).transfer(to, value);
+    }
 }
