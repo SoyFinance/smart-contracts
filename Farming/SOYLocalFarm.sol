@@ -283,11 +283,7 @@ contract SOYLocalFarm is IERC223Recipient, ReentrancyGuard, RewardsRecipient, Ow
     // Analogue of deposit() function.
     function tokenReceived(address _from, uint256 _amount, bytes memory _data) public override nonReentrant
     {
-        _data; // Stupid warning silencer.
-        
         require(msg.sender == address(lpToken), "Trying to deposit wrong token");
-        
-        //UserInfo storage user = userInfo[_from];
         require(userInfo[_from].amount + _amount <= limitAmount, 'exceed the top');
 
         update();
