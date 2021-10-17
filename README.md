@@ -14,7 +14,7 @@
 
 - WCLO ERC223 (wrapped CLO) token [0xF5AD6F6EDeC824C7fD54A66d241a227F6503aD3a](https://explorer.callisto.network/address/0xF5AD6F6EDeC824C7fD54A66d241a227F6503aD3a/contracts)
 - SoyFinanceFactory [0x9CC7C769eA3B37F1Af0Ad642A268b80dc80754c5](https://explorer.callisto.network/address/0x9CC7C769eA3B37F1Af0Ad642A268b80dc80754c5/contracts)
-- SoyFinanceRouter [0x7371586d1e27b739b4A582f38240327b1881F445](https://explorer.callisto.network/address/0x7371586d1e27b739b4A582f38240327b1881F445/contracts)
+- SoyFinanceRouter [0xeB5B468fAacC6bBdc14c4aacF0eec38ABCCC13e7](https://explorer.callisto.network/address/0xeB5B468fAacC6bBdc14c4aacF0eec38ABCCC13e7/contracts)
 - AirdropSoy contract ([AirdropSoy.sol](https://github.com/SoyFinance/smart-contracts/blob/main/AirdropSoy.sol)) [0x0E2bfaabb56A83326A34299Ce75BBbab8A03Fce2](https://explorer.callisto.network/address/0x0E2bfaabb56A83326A34299Ce75BBbab8A03Fce2/contracts)
 - Multicall2 contract [0x3c4127A01b75E3741DD40A7a044BC70e3Ed4e77C](https://explorer.callisto.network/address/0x3c4127A01b75E3741DD40A7a044BC70e3Ed4e77C/contracts)
 
