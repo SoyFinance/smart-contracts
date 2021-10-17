@@ -351,6 +351,7 @@ contract SoyFinanceRouter is ISoyFinanceRouter02 {
     address public immutable override WCLO;
     mapping(address => mapping(address => uint)) public balanceERC223;    // user => token => value
     address public msgSender;   // ERC223 sender
+    address public tokenAddress; // ERC223 token address
     event Swap(address _sender, address _tokenIn, address _tokenOut, uint _amountIn, uint _amountOut);
     event AddLiquidity(address _sender, address _tokenA, address _tokenB, uint _amountA, uint _amountB);
     event RemoveLiquidity(address _sender, address _tokenA, address _tokenB, uint _amountA, uint _amountB);
@@ -374,6 +375,7 @@ contract SoyFinanceRouter is ISoyFinanceRouter02 {
         balanceERC223[_from][msg.sender] = balanceERC223[_from][msg.sender] + _value;   // add token to user balance
         if (_data.length >= 36) { // signature + at least 1 parameter
             msgSender = _from;
+            tokenAddress = msg.sender;
             (bool success,) = address(this).call{value:0}(_data);
             require(success, "ERC223 internal call failed");
         }
@@ -389,7 +391,10 @@ contract SoyFinanceRouter is ISoyFinanceRouter02 {
 
     function transferTo(address token, address to, uint amount) internal {
         address sender = msg.sender;
-        if (msg.sender == address(this)) sender = msgSender;
+        if (msg.sender == address(this)) {
+            require(token == tokenAddress, "Transfer wrong token");
+            sender = msgSender;
+        }
         uint balance = balanceERC223[sender][token];
         if (balance >= amount) { // ERC223 tokens were transferred 
             uint rest;
@@ -447,7 +452,7 @@ contract SoyFinanceRouter is ISoyFinanceRouter02 {
         uint amountBMin,
         address to,
         uint deadline
-    ) external virtual override ensure(deadline) returns (uint amountA, uint amountB, uint liquidity) {
+    ) external virtual override ensure(deadline) noERC223 returns (uint amountA, uint amountB, uint liquidity) {
         (amountA, amountB) = _addLiquidity(tokenA, tokenB, amountADesired, amountBDesired, amountAMin, amountBMin);
         address pair = SoyFinanceLibrary.pairFor(factory, tokenA, tokenB);
         transferTo(tokenA, pair, amountA);
@@ -461,7 +466,7 @@ contract SoyFinanceRouter is ISoyFinanceRouter02 {
         uint amountCLOMin,
         address to,
         uint deadline
-    ) external virtual override payable ensure(deadline) returns (uint amountToken, uint amountCLO, uint liquidity) {
+    ) external virtual override payable ensure(deadline) noERC223 returns (uint amountToken, uint amountCLO, uint liquidity) {
         (amountToken, amountCLO) = _addLiquidity(
             token,
             WCLO,
