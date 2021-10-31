@@ -277,10 +277,22 @@ contract SOYLocalFarm is IERC223Recipient, ReentrancyGuard, RewardsRecipient, Ow
         globalFarm          = _rewardsDistribution;
     }
     
+    bool active = false;
+    
+    modifier onlyActive {
+        require(active, "The farm is not enabled by owner!");
+        _;
+    }
+    
+    function setActive(bool _status) external onlyOwner
+    {
+        active = _status;
+    }
+    
     /* ========== ERC223 transaction handlers ====== */
     
     // Analogue of deposit() function.
-    function tokenReceived(address _from, uint256 _amount, bytes memory _data) public override nonReentrant
+    function tokenReceived(address _from, uint256 _amount, bytes memory _data) public override nonReentrant onlyActive
     {
         require(msg.sender == address(lpToken), "Trying to deposit wrong token");
         require(userInfo[_from].amount + _amount <= limitAmount, 'exceed the top');
