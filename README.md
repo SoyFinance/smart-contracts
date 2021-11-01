@@ -1,3 +1,8 @@
+# IDO
+
+- Price feed contract [0x9bFc3046ea26f8B09D3E85bd22AEc96C80D957e3](https://explorer.callisto.network/address/0x9bFc3046ea26f8B09D3E85bd22AEc96C80D957e3/contracts)
+- IDO daily auction [0xEbBDd505bA4E6CaD0C17ccd5cbd88CBA073Fe934]{https://explorer.callisto.network/address/0xEbBDd505bA4E6CaD0C17ccd5cbd88CBA073Fe934/contracts}
+
 # Deployed contracts / SOY Phase 1.0
 
 - Airdrop contract [0x06C0D53112b522c2cAA0B150Dc431386ceeC0cf0](https://explorer.callisto.network/address/0x06C0D53112b522c2cAA0B150Dc431386ceeC0cf0/contracts)
