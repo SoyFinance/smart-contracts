@@ -354,9 +354,8 @@ contract IDO is Ownable, ReentrancyGuard {
     }
 
     // return amount of SOY tokens that user may claim
-    function getTokenToClaim(address user) public view {
+    function getTokenToClaim(address user) public view returns(uint256 soyToClaim) {
         uint256 toRound = currentRoundId;
-        uint256 soyToClaim;
         uint256 _lockPercentage = lockPercentage;
         uint256 _lockPeriod = lockPeriod;
         for (uint256 i = 1; i < toRound; i++) {
