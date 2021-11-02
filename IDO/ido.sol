@@ -195,8 +195,8 @@ interface IPriceFeed {
 
 contract IDO is Ownable, ReentrancyGuard {
     struct Round {
-        uint256 soyToSell;
-        uint256 usdCollected;
+        uint256 soyToSell;  // amount of SOY sell in this round
+        uint256 usdCollected;   // USD value received in this round
         uint256 hardCap;    // maximum amount of USD that can be collected by this round
         uint256 softCap;    // minimum amount of USD to collect
         uint256 start;  // timestamp when auction start
@@ -256,7 +256,7 @@ contract IDO is Ownable, ReentrancyGuard {
         roundDuration = 7 days;  // auction round duration (in seconds).
         maxPricePercentage = 500; // maxPrice = lastRoundSoyPrice * maxPricePercentage / 100
         lockPercentage = 70;    // 50% of Soy will be locked
-        auctionRounds = 27;   // number of auction rounds
+        auctionRounds = 26;   // number of auction rounds
         */
         // daily auction
         roundDuration = 1 days;  // auction round duration (in seconds).
@@ -386,10 +386,55 @@ contract IDO is Ownable, ReentrancyGuard {
                     soyLocked += bets[i][user].soyAmount;
                 }
             }
-
         }
     }
 
+    // Returns arrays of locked SOY, unlock timestamp, SOY price (in USD with 18 decimals). Array index 0 = round 1 and so on.
+    // And total amount of SOY that user may claim and amount of SOY that is locked.
+    function getUserDetail(address user) external view 
+    returns(uint256[] memory lockedSoy, uint256[] memory lockedDate, uint256[] memory soyPrice, uint256 soyToClaim, uint256 soyLocked) 
+    {
+        uint256 currentRound = currentRoundId;
+        lockedSoy = new uint256[](currentRound-1);
+        lockedDate = new uint256[](currentRound-1);
+        soyPrice = new uint256[](currentRound-1);
+
+        uint256 _lockPercentage = lockPercentage;
+        uint256 _lockPeriod = lockPeriod;
+        for (uint256 i = 1; i < currentRound; i++) {
+            uint256 usdValue = bets[i][user].usdValue;
+            if (usdValue != 0) { // user contributed in this round
+                uint256 lockedUntil = bets[i][user].lockedUntil;
+                uint256 locked;
+                if (lockedUntil == 0) { // receive token from round
+                    uint256 total = auctionRound[i].soyToSell * usdValue / auctionRound[i].usdCollected;
+                    locked = total * _lockPercentage / 100;
+                    soyToClaim += (total - locked);
+                    lockedUntil = auctionRound[i].end + _lockPeriod;
+                    lockedDate[i-1] = lockedUntil;
+                    lockedSoy[i-1] = locked;
+                    soyPrice[i-1] = auctionRound[i].usdCollected * 10**18 / auctionRound[i].soyToSell;
+                }
+                if (lockedUntil < block.timestamp) {
+                    soyToClaim += bets[i][user].soyAmount;
+                    soyToClaim += locked;   // in case of user do first claim in 1 year after auction end.
+                } else {
+                    soyLocked += bets[i][user].soyAmount;
+                }
+            } else if (bets[i][user].soyAmount != 0){
+                lockedDate[i-1] = bets[i][user].lockedUntil;
+                lockedSoy[i-1] = bets[i][user].soyAmount;
+                soyPrice[i-1] = auctionRound[i].usdCollected * 10**18 / auctionRound[i].soyToSell;                
+                if (lockedDate[i-1] < block.timestamp) {
+                    soyToClaim += lockedSoy[i-1];
+                } else {
+                    soyLocked += lockedSoy[i-1];
+                }
+            }
+        }
+    }
+
+    
     // returns USD value collected in the current round and total USD value collected during the auction
     function getCollectedUSD() external view returns(uint256 currentRoundUSD, uint256 totalUSD) {
         uint256 currentRound = currentRoundId;
