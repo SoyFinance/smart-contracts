@@ -314,7 +314,7 @@ contract IDO is Ownable, ReentrancyGuard {
     }
 
     function auctionStart(uint256 startTime, uint256 soyPrice) external onlyOwner {
-        require(currentRoundId == 0, "Only start on time");
+        require(currentRoundId == 0, "Only start once");
         lastRoundSoyPrice = soyPrice;
         auctionRound[0].soyToSell = 29491750873668297408771; // auctionRound[0] * RATIO / 10**18 == 30 000 SOY for first day in daily auction.
         startRound(startTime);
@@ -354,24 +354,26 @@ contract IDO is Ownable, ReentrancyGuard {
     }
 
     // return amount of SOY tokens that user may claim
-    function getTokenToClaim(address user) public view returns(uint256 soyToClaim) {
+    function getTokenToClaim(address user) public view returns(uint256 soyToClaim, uint soyLocked) {
         uint256 toRound = currentRoundId;
         uint256 _lockPercentage = lockPercentage;
         uint256 _lockPeriod = lockPeriod;
         for (uint256 i = 1; i < toRound; i++) {
             uint256 usdValue = bets[i][user].usdValue;
             if (usdValue != 0) { // user contributed in this round
-                uint256 lockedUntil;
+                uint256 lockedUntil = bets[i][user].lockedUntil;
                 uint256 locked;
-                if (bets[i][user].lockedUntil == 0) { // receive token form round
+                if (lockedUntil == 0) { // receive token form round
                     uint256 total = auctionRound[i].soyToSell * usdValue / auctionRound[i].usdCollected;
                     locked = total * _lockPercentage / 100;
                     soyToClaim += (total - locked);
                     lockedUntil = auctionRound[i].end + _lockPeriod;
                 }
-                if (bets[i][user].lockedUntil < block.timestamp || lockedUntil < block.timestamp) {
+                if (lockedUntil < block.timestamp) {
                     soyToClaim += bets[i][user].soyAmount;
                     soyToClaim += locked;   // in case of user do first claim in 1 year after auction end.
+                } else {
+                    soyLocked += bets[i][user].soyAmount;
                 }
             }
         }
