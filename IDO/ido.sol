@@ -337,7 +337,7 @@ contract IDO is Ownable, ReentrancyGuard {
         for (uint256 i = fromRound; i<toRound; i++) {
             uint256 usdValue = bets[i][user].usdValue;
             if (usdValue != 0) { // user contributed in this round
-                if (bets[i][user].lockedUntil == 0) { // receive token form round
+                if (bets[i][user].lockedUntil == 0) { // receive token from round
                     uint256 total = auctionRound[i].soyToSell * usdValue / auctionRound[i].usdCollected;
                     uint256 locked = total * _lockPercentage / 100;
                     soyToClaim += (total - locked);
@@ -363,7 +363,7 @@ contract IDO is Ownable, ReentrancyGuard {
             if (usdValue != 0) { // user contributed in this round
                 uint256 lockedUntil = bets[i][user].lockedUntil;
                 uint256 locked;
-                if (lockedUntil == 0) { // receive token form round
+                if (lockedUntil == 0) { // receive token from round
                     uint256 total = auctionRound[i].soyToSell * usdValue / auctionRound[i].usdCollected;
                     locked = total * _lockPercentage / 100;
                     soyToClaim += (total - locked);
