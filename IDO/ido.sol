@@ -344,18 +344,21 @@ contract IDO is Ownable, ReentrancyGuard {
                     soyToClaim += (total - locked);
                     bets[i][user].soyAmount = locked;
                     bets[i][user].lockedUntil = auctionRound[i].end + _lockPeriod;
+                    bets[i][user].usdValue = 0;
                 }
-                if (bets[i][user].lockedUntil < block.timestamp && bets[i][user].soyAmount != 0) {
-                    soyToClaim += bets[i][user].soyAmount;
-                    bets[i][user].soyAmount = 0;
-                }
+            }
+            // Check if can claim locked tokens 
+            uint256 soyAmount = bets[i][user].soyAmount;
+            if (soyAmount != 0 && bets[i][user].lockedUntil < block.timestamp) {
+                soyToClaim += soyAmount;
+                bets[i][user].soyAmount = 0;
             }
         }
         IERC223(SoyToken).transfer(user, soyToClaim);
     }
 
     // return amount of SOY tokens that user may claim and amount that locked
-    function getTokenToClaim(address user) public view returns(uint256 soyToClaim, uint256 soyLocked) {
+    function getTokenToClaim(address user) external view returns(uint256 soyToClaim, uint256 soyLocked) {
         uint256 toRound = currentRoundId;
         uint256 _lockPercentage = lockPercentage;
         uint256 _lockPeriod = lockPeriod;
@@ -376,8 +379,29 @@ contract IDO is Ownable, ReentrancyGuard {
                 } else {
                     soyLocked += bets[i][user].soyAmount;
                 }
+            } else if (bets[i][user].soyAmount != 0){
+                if (bets[i][user].lockedUntil < block.timestamp) {
+                    soyToClaim += bets[i][user].soyAmount;
+                } else {
+                    soyLocked += bets[i][user].soyAmount;
+                }
             }
+
         }
+    }
+
+    // returns USD value collected in the current round and total USD value collected during the auction
+    function getCollectedUSD() external view returns(uint256 currentRoundUSD, uint256 totalUSD) {
+        uint256 currentRound = currentRoundId;
+        currentRoundUSD = auctionRound[currentRound].usdCollected;
+        for (uint i=1; i<=currentRound; i++) {
+            totalUSD = auctionRound[i].usdCollected;
+        }
+    }
+
+    // returns USD value collected in the round
+    function getCollectedUSD(uint256 round) external view returns(uint256) {
+        return auctionRound[round].usdCollected;
     }
 
     // Bet with ERC223 token
