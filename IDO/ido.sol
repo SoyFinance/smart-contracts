@@ -234,9 +234,10 @@ contract IDO is Ownable, ReentrancyGuard {
     uint256 public maxExtendRounds;    // maximum number of rounds to extend tha auction
 
 
-    event RoundEnds(uint256 roundID, uint256 soySold, uint256 usdCollected);
+    event RoundEnds(uint256 indexed roundID, uint256 soySold, uint256 usdCollected);
     event Rescue(address _token, uint256 _amount);
     event SetBank(address _bank);
+    event UserBet(uint256 indexed roundID, address indexed user, address indexed token, uint256 usdValue, uint256 tokenAmount);
 
     modifier notPaused() {
         require(!isPaused, "Paused");
@@ -249,7 +250,7 @@ contract IDO is Ownable, ReentrancyGuard {
         emit OwnershipTransferred(address(0), msg.sender);
         lockPeriod = 365 days;   // period while tokens will be locked
         minPricePercentage = 90;  // percentage of previous auction price assign to min price
-        maxExtendRounds = 5;    // maximum number of rounds to extend tha auction
+        maxExtendRounds = 3;    // maximum number of rounds to extend the auction
 
         /*// weekly auction
         roundDuration = 7 days;  // auction round duration (in seconds).
@@ -308,9 +309,9 @@ contract IDO is Ownable, ReentrancyGuard {
         auctionRounds = val;
     }
 
-    function setTotalSoyToSell(uint256 val) external onlyOwner {
-        require(val >= totalSoySold);
-        totalSoyToSell = val;
+    function setAllowedToken(address token, bool state) external onlyOwner {
+        require(token != address(0));
+        allowedToken[token] = state;
     }
 
     function auctionStart(uint256 startTime, uint256 soyPrice) external onlyOwner {
@@ -399,6 +400,7 @@ contract IDO is Ownable, ReentrancyGuard {
         if (token == address(1)) {
             require(amount == msg.value, "Incorrect CLO amount");
         } else {
+            require(msg.value == 0, "Only token");
             IERC223(token).transferFrom(msg.sender, address(this), amount);
         }
         userBet(msg.sender, token, amount);
@@ -410,9 +412,10 @@ contract IDO is Ownable, ReentrancyGuard {
             transferTo(token, amount, user);
             return;
         }
+        uint256 roundID = currentRoundId;
         uint256 price = getPrice(token);
-        Round storage round = auctionRound[currentRoundId];
-        Bet storage bet = bets[currentRoundId][user];
+        Round storage round = auctionRound[roundID];
+        Bet storage bet = bets[roundID][user];
         uint256 totalUSD = round.usdCollected + (amount * price / 10**18);
         if (totalUSD >= round.hardCap) {
             uint256 rest = totalUSD - round.hardCap; // rest of USD
@@ -425,9 +428,10 @@ contract IDO is Ownable, ReentrancyGuard {
         } else {
             round.usdCollected = totalUSD;
         }
-
-        bet.usdValue += amount * price / 10**18;    // update user's bet
+        uint256 usdValue = amount * price / 10**18;
+        bet.usdValue += usdValue;    // update user's bet
         transferTo(token, amount, bank);    // transfer token to the bank address
+        emit UserBet(roundID, user, token, usdValue, amount);
     }
 
     function startRound(uint256 startTime) internal {
@@ -444,7 +448,7 @@ contract IDO is Ownable, ReentrancyGuard {
                 soyToSell = totalSoyToSell - totalSoySold;  // if left less Soy then we need due to calculation - sell all available Soy
             }
         } else {
-            uint256 roundsLeft = auctionRounds - currentRoundId + 1;
+            uint256 roundsLeft = auctionRounds + 1 - currentRoundId;
             soyToSell = (totalSoyToSell - totalSoySold) / roundsLeft;
         }
 
