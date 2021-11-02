@@ -314,8 +314,19 @@ contract IDO is Ownable, ReentrancyGuard {
         allowedToken[token] = state;
     }
 
+    // set amount to sell at current round
+    function setRoundSellAmount(uint256 amount) external onlyOwner {
+        uint256 currentAmount = auctionRound[currentRoundId].soyToSell;
+        totalSoySold = totalSoySold + amount - currentAmount;
+        require(totalSoyToSell >= totalSoySold, "Wrong amount");
+        auctionRound[currentRoundId].soyToSell = amount;
+        auctionRound[currentRoundId].hardCap = amount * lastRoundSoyPrice * maxPricePercentage / 10**20;    // 100 * 10**18
+        auctionRound[currentRoundId].softCap = amount * lastRoundSoyPrice * minPricePercentage / 10**20;    // 100 * 10**18
+    }
+
     function auctionStart(uint256 startTime, uint256 soyPrice) external onlyOwner {
         require(currentRoundId == 0, "Only start once");
+        require(totalSoyToSell != 0, "No SOY to sell");
         lastRoundSoyPrice = soyPrice;
         auctionRound[0].soyToSell = 29491750873668297408771; // auctionRound[0] * RATIO / 10**18 == 30 000 SOY for first day in daily auction.
         startRound(startTime);
@@ -492,7 +503,7 @@ contract IDO is Ownable, ReentrancyGuard {
             if (rest > amount) rest = amount; // this condition shouldn't be true but added to be safe.
             round.usdCollected = round.hardCap;
             amount = amount - rest; // amount of token that bet in this round
-            endRound();
+            endRound(block.timestamp);
             if (rest != 0) transferTo(token, rest, user); // return rest to the user
         } else {
             round.usdCollected = totalUSD;
@@ -522,13 +533,13 @@ contract IDO is Ownable, ReentrancyGuard {
         }
 
         round.soyToSell = soyToSell;
-        totalSoySold -= soyToSell;
-        round.hardCap = soyToSell * lastRoundSoyPrice * maxPricePercentage / 100;
-        round.softCap = soyToSell * lastRoundSoyPrice * minPricePercentage / 100;
+        totalSoySold += soyToSell;
+        round.hardCap = soyToSell * lastRoundSoyPrice * maxPricePercentage / 10**20;    // 100 * 10**18
+        round.softCap = soyToSell * lastRoundSoyPrice * minPricePercentage / 10**20;    // 100 * 10**18
     }
 
     // return true if last auction round finished
-    function endRound() internal returns(bool isLastRoundEnd) {
+    function endRound(uint256 endTime) internal returns(bool isLastRoundEnd) {
         Round storage round = auctionRound[currentRoundId];
         lastRoundSoyPrice = round.usdCollected * 10**18 / round.soyToSell;
         emit RoundEnds(currentRoundId, round.soyToSell, round.usdCollected);
@@ -536,7 +547,7 @@ contract IDO is Ownable, ReentrancyGuard {
             currentRoundId++;
             isLastRoundEnd = true;
         } else {
-            startRound(block.timestamp);
+            startRound(endTime);  // start new round when previous round ends
         }
     }
 
@@ -547,11 +558,17 @@ contract IDO is Ownable, ReentrancyGuard {
         require(currentRoundId <= auctionRounds, "Auction is finished");
         require(round.soyToSell != 0, "No SOY to sell");
         if (round.end <= block.timestamp) { // auction round finished.
-            if (round.usdCollected < round.softCap && (round.end - round.start)/roundDuration < maxExtendRounds) {
+            if (round.usdCollected < round.softCap) {
                 // extend auction on next round duration if min price was not reached
-                round.end += roundDuration;
+                uint256 duration = (block.timestamp - round.start) / roundDuration;
+                if (duration < maxExtendRounds) {
+                    round.end = round.start + ((duration+1)*roundDuration);
+                } else {
+                    round.end = round.start + (maxExtendRounds * roundDuration);
+                    isLastRoundEnd = endRound(round.end);
+                }
             } else {
-                isLastRoundEnd = endRound();
+                isLastRoundEnd = endRound(round.end);
             }
         }
     }
