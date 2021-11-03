@@ -1,8 +1,8 @@
 # IDO
 
 - Price feed contract [0x9bFc3046ea26f8B09D3E85bd22AEc96C80D957e3](https://explorer.callisto.network/address/0x9bFc3046ea26f8B09D3E85bd22AEc96C80D957e3/contracts)
-- IDO daily auction [0xEbBDd505bA4E6CaD0C17ccd5cbd88CBA073Fe934]{https://explorer.callisto.network/address/0xEbBDd505bA4E6CaD0C17ccd5cbd88CBA073Fe934/contracts}
-- IDO weekly auction [0xAD2e597F27F5988ADB8876D1c3b1A5C64c6d7403]{https://explorer.callisto.network/address/0xAD2e597F27F5988ADB8876D1c3b1A5C64c6d7403/contracts}
+- IDO daily auction [0xEbBDd505bA4E6CaD0C17ccd5cbd88CBA073Fe934](https://explorer.callisto.network/address/0xEbBDd505bA4E6CaD0C17ccd5cbd88CBA073Fe934/contracts)
+- IDO weekly auction [0xAD2e597F27F5988ADB8876D1c3b1A5C64c6d7403](https://explorer.callisto.network/address/0xAD2e597F27F5988ADB8876D1c3b1A5C64c6d7403/contracts)
 - IDO Multisig (bank and owner)[0xb068C7a7ebE619ddb57bF0b05163511950F2140A](https://explorer.callisto.network/address/0xb068C7a7ebE619ddb57bF0b05163511950F2140A/contracts)
 
 # Deployed contracts / SOY Phase 1.0
