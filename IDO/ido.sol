@@ -520,10 +520,10 @@ contract IDO is Ownable, ReentrancyGuard {
         Round storage round = auctionRound[currentRoundId];
         round.start = startTime;
         round.end = startTime + roundDuration;
-        // calculate amount of Soy to sel per round.
+        // calculate amount of Soy to sell per round.
         uint256 soyToSell;
         if (roundDuration == 1 days) {
-            soyToSell = auctionRound[currentRoundId-1].soyToSell * RATIO / 10**18;
+            soyToSell = auctionRound[currentRoundId - 1].soyToSell * RATIO / 10**18;
             if ((totalSoyToSell - totalSoySold) < soyToSell) {
                 soyToSell = totalSoyToSell - totalSoySold;  // if left less Soy then we need due to calculation - sell all available Soy
             }
