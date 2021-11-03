@@ -559,7 +559,7 @@ contract IDO is Ownable, ReentrancyGuard {
         require(round.soyToSell != 0, "No SOY to sell");
         if (round.end <= block.timestamp) { // auction round finished.
             if (round.usdCollected < round.softCap) {
-                // extend auction on next round duration if min price was not reached
+                // extend auction on next round duration if min threshold was not reached
                 uint256 duration = (block.timestamp - round.start) / roundDuration;
                 if (duration < maxExtendRounds) {
                     round.end = round.start + ((duration+1)*roundDuration);
