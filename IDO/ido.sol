@@ -389,6 +389,7 @@ contract IDO is Ownable, ReentrancyGuard {
                     soyToClaim += locked;   // in case of user do first claim in 1 year after auction end.
                 } else {
                     soyLocked += bets[i][user].soyAmount;
+                    soyLocked += locked;
                 }
             } else if (bets[i][user].soyAmount != 0){
                 if (bets[i][user].lockedUntil < block.timestamp) {
@@ -431,6 +432,7 @@ contract IDO is Ownable, ReentrancyGuard {
                     soyToClaim += locked;   // in case of user do first claim in 1 year after auction end.
                 } else {
                     soyLocked += bets[i][user].soyAmount;
+                    soyLocked += locked;
                 }
             } else if (bets[i][user].soyAmount != 0){
                 lockedDate[i-1] = bets[i][user].lockedUntil;
