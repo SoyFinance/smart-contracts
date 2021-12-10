@@ -232,6 +232,7 @@ contract IDO is Ownable, ReentrancyGuard {
     uint256 public maxPricePercentage;  // maxPrice = lastRoundSoyPrice * maxPricePercentage / 100
     uint256 public lastRoundSoyPrice;       // previous auction price
     uint256 public maxExtendRounds;    // maximum number of rounds to extend tha auction
+    uint256 public burntAmount;
 
 
     event RoundEnds(uint256 indexed roundID, uint256 soySold, uint256 usdCollected);
@@ -599,5 +600,14 @@ contract IDO is Ownable, ReentrancyGuard {
         }
         IERC223(_token).transfer(msg.sender, amount);
         emit Rescue(_token, amount);
+    }
+
+    function burn(uint256 amount) onlyOwner external {
+        require(currentRoundId > auctionRounds, "Auction is not finished");
+        uint256 amountAvailable = totalSoyToSell - totalSoySold - burntAmount;
+        require(amountAvailable != 0, "No Soy to burn");
+        if (amount > amountAvailable) amount = amountAvailable;
+        burntAmount += amount;
+        IERC223(SoyToken).transfer(address(0x000000000000000000000000000000000000dEaD), amount);
     }
 }
