@@ -608,6 +608,6 @@ contract IDO is Ownable, ReentrancyGuard {
         require(amountAvailable != 0, "No Soy to burn");
         if (amount > amountAvailable) amount = amountAvailable;
         burntAmount += amount;
-        IERC223(SoyToken).transfer(address(0x000000000000000000000000000000000000dEaD), amount);
+        IERC223(SoyToken).transfer(address(0xdEad000000000000000000000000000000000000), amount);
     }
 }
