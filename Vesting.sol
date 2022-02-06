@@ -139,6 +139,12 @@ interface IERC223 {
      * a call to {approve}. `value` is the new allowance.
      */
     event Approval(address indexed owner, address indexed spender, uint256 value);
+
+     /**
+     * @dev Additional event that is fired on successful transfer and logs transfer metadata,
+     *      this event is implemented to keep Transfer event compatible with ERC20.
+     */
+    event TransferData(bytes data);
 }
 
 abstract contract ERC223Recipient { 
@@ -156,7 +162,7 @@ abstract contract ERC223Recipient {
     * @param _value Amount of tokens.
     * @param _data  Transaction metadata.
     */
-    function tokenReceived(address _from, uint _value, bytes memory _data) external virtual {
+    function tokenReceived(address _from, uint256 _value, bytes memory _data) external virtual {
         require(depositors[_from], "Only depositors allowed");
     }
 
