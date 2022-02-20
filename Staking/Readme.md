@@ -7,17 +7,13 @@ Multiplier from 0.5 to 1 with step 0.1 for staking rounds from 1 to 6 accordingl
 
 ## Deployed test version on mainnet
 
-test version: 0x5AB8aCe9DcD22D2d16C0579C6934E8c097E6b0b3 https://explorer.callisto.network/address/0x5AB8aCe9DcD22D2d16C0579C6934E8c097E6b0b3/contracts
+Soy Staking: [0x162C1De37339C61cd52aEC6CB29a0E502a5815AE](https://testnet-explorer.callisto.network/address/0x162C1De37339C61cd52aEC6CB29a0E502a5815AE/contracts)
 
-use test SOY and Global farm from here:
-- https://github.com/SoyFinance/smart-contracts/tree/main/Farming#testsoy223-token
+Test SOY token: [0x5331B7E9f950612Ae445eF4C7178649a7E521Aa8](https://testnet-explorer.callisto.network/address/0x5331B7E9f950612Ae445eF4C7178649a7E521Aa8/contracts)
 
-`address public constant SOY = 0xC8227f810FB2F4FacBf9D3CAbca21e47f51d87a3;`
+Global farm: [0xD0c75B709659FB2942dd8879535b356ba870bA8c](https://testnet-explorer.callisto.network/address/0xD0c75B709659FB2942dd8879535b356ba870bA8c/contracts)
 
 
-- https://github.com/SoyFinance/smart-contracts/tree/main/Farming#test-global-farm-contract-3-minutes
-
-`address public constant globalFarm = 0xE8B2Fee5D18ec30f5625a5f7F1f06E5df17E1774;`
 
 ## Stake
 

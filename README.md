@@ -1,3 +1,10 @@
+# Soy Finance deployed on BTTC
+
+- WBTT ERC223 (wrapped BTT) token [0x33e85f0e26600a6644b6c910639b0bc7a99fd34e](https://scan.bt.io/#/contract/0x33e85f0e26600a6644b6c910639b0bc7a99fd34e)
+- SoyFinanceFactory [0xbf6c50889d3a620eb42c0f188b65ade90de958c4](https://scan.bt.io/#/contract/0xbf6c50889d3a620eb42c0f188b65ade90de958c4)
+- SoyFinanceRouter [0x8cb2e43e5aeb329de592f7e49b6c454649b61929](https://scan.bt.io/#/contract/0x8cb2e43e5aeb329de592f7e49b6c454649b61929)
+- Multicall2 contract [0x8dfbdeeef41eefd92a663a34331db867ca6581ae](https://scan.bt.io/#/contract/0x8dfbdeeef41eefd92a663a34331db867ca6581ae)
+
 # IDO
 
 - Price feed contract [0x9bFc3046ea26f8B09D3E85bd22AEc96C80D957e3](https://explorer.callisto.network/address/0x9bFc3046ea26f8B09D3E85bd22AEc96C80D957e3/contracts)

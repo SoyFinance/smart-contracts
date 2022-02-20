@@ -153,6 +153,8 @@ contract ColdStaking {
         start_staking(_from, _value, rounds);
     }
 
+    function notifyRewardAmount(uint256 reward) external {}
+
     function reward_request() internal
     {
         if(ISimplifiedGlobalFarm(globalFarm).rewardMintingAvailable(address(this)))
