@@ -5,9 +5,9 @@ User can stake SOY tokens if staking ends before 1 September 2022 12:00:00 UTC
 Multiplier from 0.5 to 1 with step 0.1 for staking rounds from 1 to 6 accordingly.
 
 
-## Deployed test version on mainnet
+## Deployed test version on testnet
 
-Soy Staking: [0x162C1De37339C61cd52aEC6CB29a0E502a5815AE](https://testnet-explorer.callisto.network/address/0x162C1De37339C61cd52aEC6CB29a0E502a5815AE/contracts)
+Soy Staking: [0x4E35A7060a499595a2337bc6A5ba6Ce8914e5F0A](https://testnet-explorer.callisto.network/address/0x4E35A7060a499595a2337bc6A5ba6Ce8914e5F0A/contracts)
 
 Test SOY token: [0x5331B7E9f950612Ae445eF4C7178649a7E521Aa8](https://testnet-explorer.callisto.network/address/0x5331B7E9f950612Ae445eF4C7178649a7E521Aa8/contracts)
 
