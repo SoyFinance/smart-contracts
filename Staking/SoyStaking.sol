@@ -299,7 +299,7 @@ contract ColdStaking {
     //This function may be used for info only. This can show estimated user reward at current time.
     function stake_reward(address _addr) external view returns (uint _reward)
     {
-        require(staker[_addr].amount > 0);
+        //require(staker[_addr].amount > 0);
 
         uint _blocks = block.number - LastBlock;
         uint _seconds = now - Timestamp;
