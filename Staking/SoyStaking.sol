@@ -72,7 +72,7 @@ interface IERC223 {
     event TransferData(bytes data);
 }
 
-contract ColdStaking {
+contract SoyStaking {
     
     // NOTE: The contract only works for intervals of time > round_interval
 
