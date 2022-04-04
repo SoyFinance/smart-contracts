@@ -1,9 +1,12 @@
 ## Soy Staking
 
-User can stake SOY tokens if staking ends before 1 September 2022 12:00:00 UTC
+User can stake SOY tokens if staking ends before 2 October 2022 00:00:00 UTC
 
 Multiplier from 0.5 to 1 with step 0.1 for staking rounds from 1 to 6 accordingly.
 
+## Deployed on main net
+
+Soy Staking [0xeB4511C90F9387De8F8945ABD8C803d5cB275509](https://explorer.callisto.network/address/0xeB4511C90F9387De8F8945ABD8C803d5cB275509/read-contract)
 
 ## Deployed test version on testnet
 
