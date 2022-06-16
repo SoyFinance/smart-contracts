@@ -91,7 +91,7 @@ contract SOYLocalFarm is ReentrancyGuard, RewardsRecipient
     // Info of each user that stakes LP tokens.
     mapping (address => UserInfo) public userInfo;
     
-    uint256 public limitAmount = 1e40; // Prevents accumulatedRewardPerShare from overflowing.
+    uint256 public limitAmount; // Prevents accumulatedRewardPerShare from overflowing.
     
     IERC223 public rewardsToken;
     IERC223 public lpToken;
@@ -122,6 +122,7 @@ contract SOYLocalFarm is ReentrancyGuard, RewardsRecipient
         rewardsToken        = IERC223(_rewardsToken);
         lpToken             = IERC223(_lpToken);
         globalFarm          = msg.sender; // GlobalFarm contract
+        limitAmount = 1e40;
     }
     
     bool active = false;
