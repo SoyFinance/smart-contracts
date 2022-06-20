@@ -1,9 +1,22 @@
+# Soy Finance deployed on ETC
+- SoyFinanceFactory `0x23675f1Ac7cce101Aff647B96d7201EfCf66E4b0`
+- SoyFinanceRouter `0x8c5Bba04B2f5CCCe0f8F951D2DE9616BE190070D`
+- Multicall2 contract `0x98194aaA67638498547Df929DF4926C7D0DCD135`
+- WETC ERC223 (wrapped ETC) token `0x35e9A89e43e45904684325970B2E2d258463e072`
+
+# Soy Finance deployed on BSC
+
+- SoyFinanceFactory [0x23675f1Ac7cce101Aff647B96d7201EfCf66E4b0](https://bscscan.com/address/0x23675f1Ac7cce101Aff647B96d7201EfCf66E4b0#code)
+- SoyFinanceRouter [0x8c5Bba04B2f5CCCe0f8F951D2DE9616BE190070D](https://bscscan.com/address/0x8c5Bba04B2f5CCCe0f8F951D2DE9616BE190070D#code)
+- Multicall2 contract [0x98194aaA67638498547Df929DF4926C7D0DCD135](https://bscscan.com/address/0x98194aaA67638498547Df929DF4926C7D0DCD135#code)
+- WBNB (wrapped BNB) token [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c](https://bscscan.com/address/0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c#code)
+
 # Soy Finance deployed on BTTC
 
-- WBTT ERC223 (wrapped BTT) token [0x33e85f0e26600a6644b6c910639b0bc7a99fd34e](https://bttcscan.com/address/0x33e85f0e26600a6644b6c910639b0bc7a99fd34e#contracts)
 - SoyFinanceFactory [0xbf6c50889d3a620eb42c0f188b65ade90de958c4](https://bttcscan.com/address/0xbf6c50889d3a620eb42c0f188b65ade90de958c4#code)
 - SoyFinanceRouter [0x8cb2e43e5aeb329de592f7e49b6c454649b61929](https://bttcscan.com/address/0x8Cb2e43e5AEB329de592F7e49B6c454649b61929#code)
 - Multicall2 contract [0x8dfbdeeef41eefd92a663a34331db867ca6581ae](https://bttcscan.com/address/0x8dfbdeeef41eefd92a663a34331db867ca6581ae#code)
+- WBTT ERC223 (wrapped BTT) token [0x33e85f0e26600a6644b6c910639b0bc7a99fd34e](https://bttcscan.com/address/0x33e85f0e26600a6644b6c910639b0bc7a99fd34e#contracts)
 
 # IDO
 
