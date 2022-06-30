@@ -13,11 +13,11 @@ For more in-depth information on the core contract logic, read the [Uniswap v2 C
 View [SoyFinanceRouter.sol on GitHub](https://github.com/SoyFinance/smart-contracts/blob/main/SoyFinanceRouter.sol).
 
 
-View the SoyFinance Router v2 contract on:
+View the **SoyFinance Router v2** contract on:
 - Callisto Network [0xeB5B468fAacC6bBdc14c4aacF0eec38ABCCC13e7](https://explorer.callisto.network/address/0xeB5B468fAacC6bBdc14c4aacF0eec38ABCCC13e7).
-- BitTorrent chain [0x8cb2e43e5aeb329de592f7e49b6c454649b61929](https://bttcscan.com/address/0x8Cb2e43e5AEB329de592F7e49B6c454649b61929#code)
-- Binance Smart Chain [0x8c5Bba04B2f5CCCe0f8F951D2DE9616BE190070D](https://bscscan.com/address/0x8c5Bba04B2f5CCCe0f8F951D2DE9616BE190070D#code)
-- Ethereum Classic [0x8c5Bba04B2f5CCCe0f8F951D2DE9616BE190070D](https://blockscout.com/etc/mainnet/address/0x8c5Bba04B2f5CCCe0f8F951D2DE9616BE190070D/contracts)
+- BitTorrent chain (BTTC) [0x8cb2e43e5aeb329de592f7e49b6c454649b61929](https://bttcscan.com/address/0x8Cb2e43e5AEB329de592F7e49B6c454649b61929#code)
+- Binance Smart Chain (BSC) [0x8c5Bba04B2f5CCCe0f8F951D2DE9616BE190070D](https://bscscan.com/address/0x8c5Bba04B2f5CCCe0f8F951D2DE9616BE190070D#code)
+- Ethereum Classic (ETC) [0x8c5Bba04B2f5CCCe0f8F951D2DE9616BE190070D](https://blockscout.com/etc/mainnet/address/0x8c5Bba04B2f5CCCe0f8F951D2DE9616BE190070D/contracts)
 
 ## Read functions
 
