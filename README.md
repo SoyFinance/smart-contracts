@@ -1,6 +1,6 @@
 # Soy Finance deployed on ETC
 - SoyFinanceFactory `0x23675f1Ac7cce101Aff647B96d7201EfCf66E4b0`
-- SoyFinanceRouter `0x8c5Bba04B2f5CCCe0f8F951D2DE9616BE190070D`
+- SoyFinanceRouter [0x8c5Bba04B2f5CCCe0f8F951D2DE9616BE190070D](https://blockscout.com/etc/mainnet/address/0x8c5Bba04B2f5CCCe0f8F951D2DE9616BE190070D/contracts)
 - Multicall2 contract `0x98194aaA67638498547Df929DF4926C7D0DCD135`
 - WETC ERC223 (wrapped ETC) token `0x35e9A89e43e45904684325970B2E2d258463e072`
 
