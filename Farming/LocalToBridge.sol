@@ -59,5 +59,6 @@ contract LocalToBridge {
     function claim() external {
         require(ISimplifiedGlobalFarm(globalFarm).rewardMintingAvailable(address(this)), "Reward not available");
         ISimplifiedGlobalFarm(globalFarm).mintFarmingReward(address(this));
+        lastRewardTimestamp = block.timestamp;
     }
 }
