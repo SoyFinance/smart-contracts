@@ -277,7 +277,7 @@ contract SOYLocalFarm is IERC223Recipient, ReentrancyGuard, RewardsRecipient, Ow
         globalFarm          = _rewardsDistribution;
     }
     
-    bool active = false;
+    bool public active = false;
     
     modifier onlyActive {
         require(active, "The farm is not enabled by owner!");
