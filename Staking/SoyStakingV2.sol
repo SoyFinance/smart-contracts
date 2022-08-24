@@ -89,6 +89,9 @@ interface IERC223 {
         bytes memory data
     ) external returns (bool success);
 
+    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
+    function burn(uint256 amount) external returns (bool);
+
     /**
      * @dev Event that is fired on successful transfer.
      */
@@ -106,13 +109,14 @@ contract SoyStaking is Ownable {
     address public constant globalFarm = 0x64Fa36ACD0d13472FD786B03afC9C52aD5FCf023;
     uint256 public constant BONUS_LIMIT = 10;   // maximum bonus percentage can be bought
     address public bonusToken;  // token address 
+    uint256[] internal bonusPrice;    // bonus percentage = index + 1 (i.e. 1% = index 0), value price in bonusToken (from lower to higher)
 
     //========== TESTNET VALUES ===========
     //https://github.com/SoyFinance/smart-contracts/tree/main/Farming#testsoy223-token
-    //address public constant SOY = 0xC8227f810FB2F4FacBf9D3CAbca21e47f51d87a3;
+    //address public constant SOY = 0x4c20231BCc5dB8D805DB9197C84c8BA8287CbA92;
 
     // https://github.com/SoyFinance/smart-contracts/tree/main/Farming#test-global-farm-contract-3-minutes
-    //address public constant globalFarm = 0xE8B2Fee5D18ec30f5625a5f7F1f06E5df17E1774;
+    //address public constant globalFarm = 0x84122f45f224f9591C13183675477AA62e993B13;
     //========== END TEST VALUES ==========
 
     bool public isEnabled;
@@ -316,20 +320,50 @@ contract SoyStaking is Ownable {
     }
 
     // buy bonus percent using bonusTokens
-    function buyBonus(uint256 amount) external {
+    function buyBonus(uint256 bonus) external {
         require(staker[msg.sender].endTime == 0, "Account locked for staking");
         update(0);
         uint256 userReward = pendingReward(msg.sender);
         staker[msg.sender].rewardPerSharePaid = accumulatedRewardPerShare;
         // user can buy bonus multiplier
-        // TODO waiting for formula from ZS
-        uint256 multiplier; // bought multiplier (TODO will be added)
-        require(multiplier + staker[msg.sender].bonus <= BONUS_LIMIT, "bonus limit reached");
-        staker[msg.sender].bonus = uint64(staker[msg.sender].bonus + multiplier);
+        uint256 amount = getBonusPrice(bonus, msg.sender);  // get difference in price between current and wanted bonuses
+        require(amount != 0, "user already has this bonus");
+        IERC223(bonusToken).transferFrom(msg.sender, address(this), amount);
+        IERC223(bonusToken).burn(amount);   // burn bonus token
         // apply bonus
-        uint256 bonus = multiplier * staker[msg.sender].amount / 100;
-        totalShares += bonus;
+        uint256 bonusShares = (bonus - staker[msg.sender].bonus) * staker[msg.sender].amount / 100; // just bought bonus * staking amount
+        totalShares += bonusShares;
+        staker[msg.sender].bonus = uint64(bonus);
         IERC223(SOY).transfer(msg.sender, userReward); // transfer rewards to user
+    }
+
+    // return amount that user has to pay to buy bonus percentage (from 1 to BONUS_LIMIT)
+    function getBonusPrice(uint256 bonus, address user) public view returns(uint256 amount) {
+        require(bonus !=0 && bonus <= bonusPrice.length, "incorrect bonus");
+        uint256 alreadyPaid;
+        uint256 userBonus = staker[user].bonus;
+        if(bonus <= userBonus) return 0; // user already has this or better bonus
+        if (userBonus != 0) alreadyPaid = bonusPrice[userBonus-1];   // 1% = index 0, 2% = index 1, ...
+        amount = bonusPrice[bonus-1] - alreadyPaid;
+    }
+
+    // return array of prices. Index + 1 = percent of bonus.
+    // I.e. [0] = price of 1% bonus, [1] - price of 2% bonus, ..., [9] - price of 10% bonus
+    function getBonusPrices() external view returns(uint256[] memory) {
+        return bonusPrice;
+    }
+
+    // bonusPrices is array of prices. Index + 1 = percent of bonus.
+    // I.e. [0] = price of 1% bonus, [1] - price of 2% bonus, ..., [9] - price of 10% bonus
+    function setBonusPrices(uint256[] memory bonusPrices) external onlyOwner {
+        delete bonusPrice;
+        require(bonusPrices.length <= BONUS_LIMIT, "Too big bonus");
+        bonusPrice = bonusPrices;
+    }
+
+    // set contract address of token that accept to buy bonus
+    function setBonusToken(address _bonusToken) external onlyOwner {
+        bonusToken = _bonusToken;
     }
 
     // rescue other token if it was transferred to contract
