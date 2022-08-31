@@ -61,6 +61,7 @@
 - SoyFinanceFactory [0x9D43dd4C1Ef8384c070Bfd05615142F55EFBD89f](https://testnet-explorer.callisto.network/address/0x9D43dd4C1Ef8384c070Bfd05615142F55EFBD89f/contracts)
 - SoyFinanceRouter [0xdbe46b17FFd35D6865b69F9398AC5454389BF38c](https://testnet-explorer.callisto.network/address/0xdbe46b17FFd35D6865b69F9398AC5454389BF38c/contracts)
 - Multicall contract [0x38920A03c3Aa13E19c87777ef0443C54FaAD1992](https://testnet-explorer.callisto.network/address/0x38920A03c3Aa13E19c87777ef0443C54FaAD1992/contracts)
+- Muticall2 contract [0xE618f8A3BEAF1f033C931F3CA16C605134DcCa3F](https://testnet-explorer.callisto.network/address/0xE618f8A3BEAF1f033C931F3CA16C605134DcCa3F/contracts)
 - AirdropSoy contract ([AirdropSoy.sol](https://github.com/SoyFinance/smart-contracts/blob/main/AirdropSoy.sol)) [0x864D0CfEfE4Dc7B4E4AF884a70753a1828F976cA](https://testnet-explorer.callisto.network/address/0x864D0CfEfE4Dc7B4E4AF884a70753a1828F976cA/contracts)
 - SoyRewardsToken (SRT) [0xA38760109D760fe65427551242eAC320AD7bf672](https://testnet-explorer.callisto.network/address/0xA38760109D760fe65427551242eAC320AD7bf672/contracts)
 - GlobalFarm [0x84122f45f224f9591C13183675477AA62e993B13](https://testnet-explorer.callisto.network/address/0x84122f45f224f9591C13183675477AA62e993B13/write-contract)
