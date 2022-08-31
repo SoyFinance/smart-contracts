@@ -116,7 +116,7 @@ contract SoyStaking is Ownable {
     //address public constant SOY_TOKEN = 0x4c20231BCc5dB8D805DB9197C84c8BA8287CbA92;
 
     // https://github.com/SoyFinance/smart-contracts/tree/main/Farming#test-global-farm-contract-3-minutes
-    //address public constant globalFarm = 0x84122f45f224f9591C13183675477AA62e993B13;
+    //address public constant globalFarm = 0x9F66541abc036503Ae074E1E28638b0Cb6165458;
     //========== END TEST VALUES ==========
 
     bool public isEnabled;
@@ -208,8 +208,15 @@ contract SoyStaking is Ownable {
 
     // Add tokens to the unlocked staking. Reward is transferred to user
     function startStaking(address user, uint256 amount) internal {
-        require(staker[user].endTime == 0, "Account locked for staking");
         require(isEnabled, "staking disabled");
+        if (staker[user].endTime != 0) {
+            if (staker[user].endTime < block.timestamp) {
+                _withdraw(user); // withdraw if lock expired
+                return;
+            } else {
+                require(amount == 0, "Account locked for staking");
+            }
+        }
         update(0);
         totalStaked += amount;
         totalShares += (amount * (100 + staker[user].bonus) / 100); // multiply staked amount by bonus multiplier
@@ -248,9 +255,11 @@ contract SoyStaking is Ownable {
                 return _pendingReward(user, _accumulatedRewardPerShare);
         }
         timePassed = _alignedTime - _lastRewardTimestamp;
-        _accumulatedRewardPerShare =
-            _accumulatedRewardPerShare +
-            ((timePassed * _reward) / _totalShares);
+        if (_totalShares != 0) {
+            _accumulatedRewardPerShare =
+                _accumulatedRewardPerShare +
+                ((timePassed * _reward) / _totalShares);
+        }
         return _pendingReward(user, _accumulatedRewardPerShare);
     }
 
@@ -306,9 +315,13 @@ contract SoyStaking is Ownable {
         totalShares = _totalShares;
         timePassed = _alignedTime - _lastRewardTimestamp;
         lastRewardTimestamp = _alignedTime;
-        accumulatedRewardPerShare =
-            _accumulatedRewardPerShare +
-            ((timePassed * _reward) / _totalShares);
+        if  (_totalShares != 0) {
+            accumulatedRewardPerShare =
+                _accumulatedRewardPerShare +
+                ((timePassed * _reward) / _totalShares);
+        } else {
+            accumulatedRewardPerShare = _accumulatedRewardPerShare;
+        }
     }
 
     // Withdraw request lock staking for lockTime.
@@ -325,7 +338,7 @@ contract SoyStaking is Ownable {
         emit WithdrawRequest(msg.sender, endTime, stakedAmount);
         uint256 bonus = staker[msg.sender].bonus * stakedAmount / 100;
         stakedAmount = stakedAmount + bonus; // effective share = staked amount + bonus
-        if (balances[balances.length - 1].atTime == endTime) {
+        if (balances.length != 0 && balances[balances.length - 1].atTime == endTime) {
             // we have records for current hour
             balances[balances.length - 1]
                 .balanceReduceOrRewardPerShare += stakedAmount;
