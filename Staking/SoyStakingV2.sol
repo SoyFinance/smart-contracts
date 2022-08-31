@@ -105,7 +105,7 @@ interface IERC223 {
 }
 
 contract SoyStaking is Ownable {
-    address public constant SOY = 0x9FaE2529863bD691B4A7171bDfCf33C7ebB10a65;
+    address public constant SOY_TOKEN = 0x9FaE2529863bD691B4A7171bDfCf33C7ebB10a65;
     address public constant globalFarm = 0x64Fa36ACD0d13472FD786B03afC9C52aD5FCf023;
     uint256 public constant BONUS_LIMIT = 10;   // maximum bonus percentage can be bought
     address public bonusToken;  // token address 
@@ -113,7 +113,7 @@ contract SoyStaking is Ownable {
 
     //========== TESTNET VALUES ===========
     //https://github.com/SoyFinance/smart-contracts/tree/main/Farming#testsoy223-token
-    //address public constant SOY = 0x4c20231BCc5dB8D805DB9197C84c8BA8287CbA92;
+    //address public constant SOY_TOKEN = 0x4c20231BCc5dB8D805DB9197C84c8BA8287CbA92;
 
     // https://github.com/SoyFinance/smart-contracts/tree/main/Farming#test-global-farm-contract-3-minutes
     //address public constant globalFarm = 0x84122f45f224f9591C13183675477AA62e993B13;
@@ -190,7 +190,14 @@ contract SoyStaking is Ownable {
         uint256 _value,
         bytes calldata _data
     ) external {
-        require(msg.sender == SOY, "Only SOY");
+        if (msg.sender == bonusToken) {
+            uint256 bonus;
+            require(_data.length == 32, "Wrong bonus percentage");
+            bonus = abi.decode(_data, (uint256));  // _data should contain ABI encoded UINT =  bonus percentage
+            _buyBonus(_from, _value, bonus);
+            return;
+        }
+        require(msg.sender == SOY_TOKEN, "Only SOY staking is supported");
         if (_from == globalFarm || _from == owner()) return; // if globalFarm or admin transfer tokens, they will be added to reward pool
 
         // No donations accepted to fallback!
@@ -206,16 +213,49 @@ contract SoyStaking is Ownable {
         update(0);
         totalStaked += amount;
         totalShares += (amount * (100 + staker[user].bonus) / 100); // multiply staked amount by bonus multiplier
-        uint256 userReward = pendingReward(user);
+        uint256 userReward = _pendingReward(user, accumulatedRewardPerShare);
         staker[user].amount += amount;
         staker[user].rewardPerSharePaid = accumulatedRewardPerShare;
-        IERC223(SOY).transfer(user, userReward); // transfer rewards to user
+        IERC223(SOY_TOKEN).transfer(user, userReward); // transfer rewards to user
         emit StartStaking(user, amount, block.timestamp);
     }
 
     // View function to see pending Reward on frontend.
     function pendingReward(address user) public view returns (uint256) {
+
+        uint256 _alignedTime = (block.timestamp / 1 hours) * 1 hours; // aligned by 1 hour
+        uint256 _lastRewardTimestamp = lastRewardTimestamp;
         uint256 _accumulatedRewardPerShare = accumulatedRewardPerShare;
+        if (_alignedTime <= _lastRewardTimestamp) {
+            return _pendingReward(user, _accumulatedRewardPerShare);
+        }
+        uint256 _totalShares = totalShares;
+        uint256 _reward = getRewardPerSecond() * getAllocationX1000() * 1e15; // 1e15 = 1e18 / 1000;
+        uint256 timePassed;
+        uint256 i = startIndex; // start from
+        uint256 maxRecords = balances.length;
+        for (; i < maxRecords; i++) {
+            if (balances[i].atTime > _alignedTime) break; // future record
+            timePassed = balances[i].atTime - _lastRewardTimestamp;
+            _lastRewardTimestamp = balances[i].atTime;
+            _accumulatedRewardPerShare =
+                _accumulatedRewardPerShare +
+                ((timePassed * _reward) / _totalShares);
+            _totalShares =
+                _totalShares -
+                balances[i].balanceReduceOrRewardPerShare;
+            if (staker[user].endTime != 0 && staker[user].index == i) // found block where user's stake end
+                return _pendingReward(user, _accumulatedRewardPerShare);
+        }
+        timePassed = _alignedTime - _lastRewardTimestamp;
+        _accumulatedRewardPerShare =
+            _accumulatedRewardPerShare +
+            ((timePassed * _reward) / _totalShares);
+        return _pendingReward(user, _accumulatedRewardPerShare);
+    }
+
+    // Calculate pending reward of user
+    function _pendingReward(address user, uint256 _accumulatedRewardPerShare) internal view returns (uint256) {
         uint256 shares = staker[user].amount * (100 + staker[user].bonus) / 100;
         if (staker[user].endTime != 0 && startIndex > staker[user].index) {
             // use accumulatedRewardPerShare stored on the moment when staking ends
@@ -312,29 +352,60 @@ contract SoyStaking is Ownable {
         );
         update(0);
         uint256 amount = staker[user].amount;
-        uint256 reward = pendingReward(user);
+        uint256 reward = _pendingReward(user, accumulatedRewardPerShare);
         totalStaked -= amount;
         delete staker[user];
-        IERC223(SOY).transfer(user, amount + reward);
+        IERC223(SOY_TOKEN).transfer(user, amount + reward);
         emit WithdrawStake(user, amount, reward);
     }
 
-    // buy bonus percent using bonusTokens
+    // buy bonus percent using bonusTokens (using approve - transferFrom pattern)
     function buyBonus(uint256 bonus) external {
         require(staker[msg.sender].endTime == 0, "Account locked for staking");
         update(0);
-        uint256 userReward = pendingReward(msg.sender);
+        uint256 userReward = _pendingReward(msg.sender, accumulatedRewardPerShare);
         staker[msg.sender].rewardPerSharePaid = accumulatedRewardPerShare;
         // user can buy bonus multiplier
         uint256 amount = getBonusPrice(bonus, msg.sender);  // get difference in price between current and wanted bonuses
         require(amount != 0, "user already has this bonus");
         IERC223(bonusToken).transferFrom(msg.sender, address(this), amount);
-        IERC223(bonusToken).burn(amount);   // burn bonus token
+        _safeBurn(amount);   // burn bonus token
         // apply bonus
         uint256 bonusShares = (bonus - staker[msg.sender].bonus) * staker[msg.sender].amount / 100; // just bought bonus * staking amount
         totalShares += bonusShares;
         staker[msg.sender].bonus = uint64(bonus);
-        IERC223(SOY).transfer(msg.sender, userReward); // transfer rewards to user
+        IERC223(SOY_TOKEN).transfer(msg.sender, userReward); // transfer rewards to user
+    }
+
+    // buy bonus percent using ERC223 bonusTokens 
+    function _buyBonus(address user, uint256 value, uint256 bonus) internal {
+        require(staker[user].endTime == 0, "Account locked for staking");
+        update(0);
+        uint256 userReward = _pendingReward(user, accumulatedRewardPerShare);
+        staker[user].rewardPerSharePaid = accumulatedRewardPerShare;
+        // user can buy bonus multiplier
+        uint256 amount = getBonusPrice(bonus, user);  // get difference in price between current and wanted bonuses
+        require(amount != 0, "user already has this bonus");
+        require(amount == value, "user transferred wrong amount");
+        _safeBurn(amount);   // burn bonus token
+        // apply bonus
+        uint256 bonusShares = (bonus - staker[user].bonus) * staker[user].amount / 100; // just bought bonus * staking amount
+        totalShares += bonusShares;
+        staker[user].bonus = uint64(bonus);
+        IERC223(SOY_TOKEN).transfer(user, userReward); // transfer rewards to user
+    }
+
+    function _safeBurn(uint256 amount) internal {
+        try IERC223(bonusToken).burn(amount) returns (bool)   // try to burn bonus token
+        { 
+            return;
+        }
+        catch 
+        {
+            // if burn function is not implemented then transfer to DEAD address
+            IERC223(bonusToken).transfer(address(0xdEad000000000000000000000000000000000000), amount);
+        }
+
     }
 
     // return amount that user has to pay to buy bonus percentage (from 1 to BONUS_LIMIT)
@@ -368,7 +439,7 @@ contract SoyStaking is Ownable {
 
     // rescue other token if it was transferred to contract
     function rescueTokens(address _token) onlyOwner external {
-        if (_token == SOY) return;
+        if (_token == SOY_TOKEN) return;
         uint256 amount = IERC223(_token).balanceOf(address(this));
         IERC223(_token).transfer(msg.sender, amount);
         emit Rescue(_token, amount);
