@@ -121,7 +121,7 @@ contract SoyStaking is Ownable {
 
     bool public isEnabled;
     uint256 public totalShares; // effective total shares included bonuses
-    uint256 public totalStaked; // total staked amount on contract (just for info)
+    uint256 public totalStaked; // total staked amount on contract
 
     struct Staker {
         uint256 amount;
@@ -452,7 +452,7 @@ contract SoyStaking is Ownable {
 
     // rescue other token if it was transferred to contract
     function rescueTokens(address _token) onlyOwner external {
-        if (_token == SOY_TOKEN) return;
+        if (_token == SOY_TOKEN && totalStaked != 0) return;   // allow rescue SOY tokens when no stake
         uint256 amount = IERC223(_token).balanceOf(address(this));
         IERC223(_token).transfer(msg.sender, amount);
         emit Rescue(_token, amount);
