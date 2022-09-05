@@ -493,9 +493,11 @@ contract SoyStaking is Ownable {
         bonusToken = _bonusToken;
     }
 
-    // set affiliate percent and no affiliate reducing percent
+    // set affiliate percent and no affiliate percent
+    // maximum allowed affiliatePercent = 50%
+    // minimum no affiliate percent = 50%
     function setAffiliatePercentage(uint256 _affiliatePercent, uint256 _noAffiliatePercent) external onlyOwner {
-        require(_affiliatePercent <= 50 && _noAffiliatePercent <= 50, "Percentage too high");
+        require(_affiliatePercent <= 50 && _noAffiliatePercent >= 50, "Wrong percentage");
         affiliatePercent = _affiliatePercent;
         noAffiliatePercent = _noAffiliatePercent;
         emit SetAffiliatePercentage(_affiliatePercent, _noAffiliatePercent);
