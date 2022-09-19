@@ -90,6 +90,7 @@ interface IERC223 {
     ) external returns (bool success);
 
     function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
+    function approve(address spender, uint256 amount) external returns (bool);
     function burn(uint256 amount) external returns (bool);
 
     /**
@@ -107,11 +108,13 @@ interface IERC223 {
 contract SoyStaking is Ownable {
     address public constant SOY_TOKEN = 0x9FaE2529863bD691B4A7171bDfCf33C7ebB10a65;
     address public constant globalFarm = 0x64Fa36ACD0d13472FD786B03afC9C52aD5FCf023;
+    uint256 public constant TIME_RESOLUTION = 1 hours;  // rewards calculates per each TIME_RESOLUTION
     uint256 public constant BONUS_LIMIT = 10;   // maximum bonus percentage can be bought
     address public bonusToken;  // token address 
     uint256[] internal bonusPrice;    // bonus percentage = index + 1 (i.e. 1% = index 0), value price in bonusToken (from lower to higher)
 
     //========== TESTNET VALUES ===========
+    //uint256 public constant TIME_RESOLUTION = 5 minutes;  // rewards calculates per each TIME_RESOLUTION
     //https://github.com/SoyFinance/smart-contracts/tree/main/Farming#testsoy223-token
     //address public constant SOY_TOKEN = 0x4c20231BCc5dB8D805DB9197C84c8BA8287CbA92;
 
@@ -129,7 +132,8 @@ contract SoyStaking is Ownable {
         uint64 endTime; // Time when staking ends and user may withdraw. After this time user will not receive rewards.
         uint64 index; // Balances indexed
         uint64 bonus;   // percent of bonus applied
-        uint64 affiliatePercent; // percent of user's rewards that will be transferred to affiliate, i.e. 5% 
+        uint32 affiliatePercent; // percent of user's rewards that will be transferred to affiliate, i.e. 5% 
+        uint32 noAffiliatePercent; // percent of user's rewards will be paid if no affiliate.
         address affiliate; // address of affiliate
     }
     mapping(address => Staker) public staker;
@@ -149,6 +153,8 @@ contract SoyStaking is Ownable {
     uint256 public noAffiliatePercent; // percent of user's rewards will be paid if no affiliate. 
                                     // i.e. 90% means that user will receive only 90% of his rewards if it come without affiliate,
                                     // but if there is affiliate (with 5%) than user will receive 95% and affiliate receive 5% of reward.
+    
+    uint256 private unsplitReward;  // Reward that should be split on next TIME_RESOLUTION round
 
     event StartStaking(
         address staker,
@@ -173,6 +179,8 @@ contract SoyStaking is Ownable {
 
     constructor(uint256 _lockTime) {
         lockTime = _lockTime;
+        noAffiliatePercent = 100;   // by default 100% rewards go to users
+        IERC223(SOY_TOKEN).approve(address(this), type(uint256).max); // allow contract to use transferFrom instead of transfer
     }
 
     function enableStaking(bool enable) external onlyOwner {
@@ -229,30 +237,23 @@ contract SoyStaking is Ownable {
         if (affiliate != address(0) && staker[user].affiliate == address(0)) { // if affiliate was not set before
             // add affiliate
             staker[user].affiliate = affiliate;
-            staker[user].affiliatePercent = uint64(affiliatePercent);
+            staker[user].affiliatePercent = uint32(affiliatePercent);
         }
+        if (staker[user].amount == 0) staker[user].noAffiliatePercent = uint32(noAffiliatePercent); // first deposit
         totalStaked += amount;
         totalShares += (amount * (100 + staker[user].bonus) / 100); // multiply staked amount by bonus multiplier
         (uint256 userReward, uint256 affiliateRewardOrRest) = _pendingReward(user, accumulatedRewardPerShare);
         staker[user].amount += amount;
         staker[user].rewardPerSharePaid = accumulatedRewardPerShare;
-        // transfer affiliate reward of split the rest
-        if (affiliateRewardOrRest != 0) {
-            affiliate = staker[user].affiliate;
-            if (affiliate != address(0)) {
-                // transfer affiliate reward to affiliate address
-                IERC223(SOY_TOKEN).transfer(affiliate, affiliateRewardOrRest); // transfer rewards to user
-            } else {
-                accumulatedRewardPerShare += (affiliateRewardOrRest * 1e18 / totalShares); // split the rest among shareholders
-            }
-        }
+        // transfer affiliate reward or split the rest
+        _safeSplitRest(affiliateRewardOrRest, user);
         IERC223(SOY_TOKEN).transfer(user, userReward); // transfer rewards to user
         emit StartStaking(user, amount, block.timestamp);
     }
 
     // View function to see pending Reward on frontend.
     function pendingReward(address user) public view returns (uint256 userReward) {
-        uint256 _alignedTime = (block.timestamp / 1 hours) * 1 hours; // aligned by 1 hour
+        uint256 _alignedTime = (block.timestamp / TIME_RESOLUTION) * TIME_RESOLUTION; // aligned by 1 hour
         uint256 _lastRewardTimestamp = lastRewardTimestamp;
         uint256 _accumulatedRewardPerShare = accumulatedRewardPerShare;
         if (_alignedTime <= _lastRewardTimestamp) {
@@ -260,6 +261,12 @@ contract SoyStaking is Ownable {
             return userReward;
         }
         uint256 _totalShares = totalShares;
+        {
+        uint256 _unsplitReward = unsplitReward;
+        if (_unsplitReward > 1) {
+            _accumulatedRewardPerShare += ((_unsplitReward-1) * 1e18 / _totalShares); // split the unsplitReward among shareholders
+        }
+        }        
         uint256 _reward = getRewardPerSecond() * getAllocationX1000() * 1e15; // 1e15 = 1e18 / 1000;
         uint256 timePassed;
         uint256 i = startIndex; // start from
@@ -300,7 +307,9 @@ contract SoyStaking is Ownable {
         }
         uint256 reward = (shares * (_accumulatedRewardPerShare - staker[user].rewardPerSharePaid)) / 1e18; // total reward
         if (staker[user].affiliate == address(0)) { // no affiliate
-            userReward = reward * noAffiliatePercent / 100;
+            uint256 _noAffiliatePercent = staker[user].noAffiliatePercent;
+            if (_noAffiliatePercent < noAffiliatePercent) _noAffiliatePercent = noAffiliatePercent; // use better noAffiliatePercent for user
+            userReward = reward * _noAffiliatePercent / 100;
             affiliateRewardOrRest = reward - userReward;    // rest of rewards that should be added to rewards pool. 
         } else {
             affiliateRewardOrRest = reward * staker[user].affiliatePercent / 100; // affiliate reward
@@ -311,7 +320,7 @@ contract SoyStaking is Ownable {
     // update total balance and accumulatedRewardPerShare regarding ended staking
     // process "maxRecords" at a time. If maxRecords == 0, process all pending records
     function update(uint256 maxRecords) public {
-        uint256 _alignedTime = (block.timestamp / 1 hours) * 1 hours; // aligned by 1 hour
+        uint256 _alignedTime = (block.timestamp / TIME_RESOLUTION) * TIME_RESOLUTION; // aligned by 1 hour
         uint256 _lastRewardTimestamp = lastRewardTimestamp;
         if (_alignedTime <= _lastRewardTimestamp) {
             return;
@@ -324,6 +333,13 @@ contract SoyStaking is Ownable {
         ISimplifiedGlobalFarm(globalFarm).mintFarmingReward(address(this));
         uint256 _reward = getRewardPerSecond() * getAllocationX1000() * 1e15; // 1e15 = 1e18 / 1000;
         uint256 _accumulatedRewardPerShare = accumulatedRewardPerShare;
+        {
+        uint256 _unsplitReward = unsplitReward;
+        if (_unsplitReward > 1) {
+            _accumulatedRewardPerShare += ((_unsplitReward-1) * 1e18 / _totalShares); // split the unsplitReward among shareholders
+            unsplitReward = 1;  // use 1 instead of 0 to save gas
+        }
+        }
         uint256 timePassed;
         uint256 i = startIndex; // start from
         maxRecords = maxRecords + i; // last record
@@ -364,7 +380,7 @@ contract SoyStaking is Ownable {
             "withdraw request already made"
         );
         update(0);
-        uint256 endTime = ((block.timestamp + lockTime) / 1 hours) * 1 hours; // staking end time aligned by 1 hour
+        uint256 endTime = ((block.timestamp + lockTime) / TIME_RESOLUTION) * TIME_RESOLUTION; // staking end time aligned by 1 hour
         staker[msg.sender].endTime = uint64(endTime);
         emit WithdrawRequest(msg.sender, endTime, stakedAmount);
         uint256 bonus = staker[msg.sender].bonus * stakedAmount / 100;
@@ -397,18 +413,10 @@ contract SoyStaking is Ownable {
         update(0);
         uint256 amount = staker[user].amount;
         (uint256 userReward, uint256 affiliateRewardOrRest) = _pendingReward(user, accumulatedRewardPerShare);
-        address affiliate = staker[user].affiliate;
         totalStaked -= amount;
         delete staker[user];
-        // transfer affiliate reward of split the rest
-        if (affiliateRewardOrRest != 0) {
-            if (affiliate != address(0)) {
-                // transfer affiliate reward to affiliate address
-                IERC223(SOY_TOKEN).transfer(affiliate, affiliateRewardOrRest); // transfer rewards to user
-            } else {
-                accumulatedRewardPerShare += (affiliateRewardOrRest * 1e18 / totalShares); // split the rest among shareholders
-            }
-        }
+        // transfer affiliate reward or split the rest
+        _safeSplitRest(affiliateRewardOrRest, user);
         IERC223(SOY_TOKEN).transfer(user, amount + userReward);
         emit WithdrawStake(user, amount, userReward);
     }
@@ -438,16 +446,8 @@ contract SoyStaking is Ownable {
         uint256 bonusShares = (bonus - staker[user].bonus) * staker[user].amount / 100; // just bought bonus * staking amount
         totalShares += bonusShares;
         staker[user].bonus = uint64(bonus);
-        // transfer affiliate reward of split the rest
-        if (affiliateRewardOrRest != 0) {
-            address affiliate = staker[user].affiliate;
-            if (affiliate != address(0)) {
-                // transfer affiliate reward to affiliate address
-                IERC223(SOY_TOKEN).transfer(affiliate, affiliateRewardOrRest); // transfer rewards to user
-            } else {
-                accumulatedRewardPerShare += (affiliateRewardOrRest * 1e18 / totalShares); // split the rest among shareholders
-            }
-        }        
+        // transfer affiliate reward or split the rest
+        _safeSplitRest(affiliateRewardOrRest, user);
         IERC223(SOY_TOKEN).transfer(user, userReward); // transfer rewards to user
     }
 
@@ -462,6 +462,20 @@ contract SoyStaking is Ownable {
             IERC223(bonusToken).transfer(address(0xdEad000000000000000000000000000000000000), amount);
         }
 
+    }
+
+    // transfer affiliate reward or split the rest.
+    function _safeSplitRest(uint256 affiliateRewardOrRest, address user) internal {
+        if (affiliateRewardOrRest != 0) {
+            address affiliate = staker[user].affiliate;
+            if (affiliate != address(0)) {
+                // transfer affiliate reward to affiliate address
+                // we are using transferFrom to protect user from affiliate that can't accept ERC223 
+                IERC223(SOY_TOKEN).transferFrom(address(this), affiliate, affiliateRewardOrRest); // transfer rewards to user
+            } else {
+                unsplitReward += affiliateRewardOrRest; // split rest reward on next update round 
+            }
+        }  
     }
 
     // return amount that user has to pay to buy bonus percentage (from 1 to BONUS_LIMIT)

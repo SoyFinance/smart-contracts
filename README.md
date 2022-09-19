@@ -65,5 +65,5 @@
 - AirdropSoy contract ([AirdropSoy.sol](https://github.com/SoyFinance/smart-contracts/blob/main/AirdropSoy.sol)) [0x864D0CfEfE4Dc7B4E4AF884a70753a1828F976cA](https://testnet-explorer.callisto.network/address/0x864D0CfEfE4Dc7B4E4AF884a70753a1828F976cA/contracts)
 - SoyRewardsToken (SRT) [0xA38760109D760fe65427551242eAC320AD7bf672](https://testnet-explorer.callisto.network/address/0xA38760109D760fe65427551242eAC320AD7bf672/contracts)
 - GlobalFarm [0x9F66541abc036503Ae074E1E28638b0Cb6165458](https://testnet-explorer.callisto.network/address/0x9F66541abc036503Ae074E1E28638b0Cb6165458/read-contract)
-- SoyStakingV2 (lock period 1 hours) [0x84D311B1Ac7E9CD543628619A45Ae8de92b9d28D](https://testnet-explorer.callisto.network/address/0x84D311B1Ac7E9CD543628619A45Ae8de92b9d28D/contracts)
-- SoyStakingV2 (lock period 2 hours) [0xD22D476Bc03071a6b4f5a820e4D1e8dbcc879F04](https://testnet-explorer.callisto.network/address/0xD22D476Bc03071a6b4f5a820e4D1e8dbcc879F04/contracts)
+- SoyStakingV2 (lock period 1 hours) [0xdCaa282Ca58A901a0a7542D150Bdc50911D864a7](https://testnet-explorer.callisto.network/address/0xdCaa282Ca58A901a0a7542D150Bdc50911D864a7/contracts)
+- SoyStakingV2 (lock period 2 hours) [0x6011860C4caC5d251Aed44A132bbC67B4CcaBf6E](https://testnet-explorer.callisto.network/address/0x6011860C4caC5d251Aed44A132bbC67B4CcaBf6E/contracts)
