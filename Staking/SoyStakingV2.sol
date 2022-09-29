@@ -107,7 +107,7 @@ interface IERC223 {
 
 contract SoyStaking is Ownable {
     address public constant SOY_TOKEN = 0x9FaE2529863bD691B4A7171bDfCf33C7ebB10a65;
-    address public constant globalFarm = 0x64Fa36ACD0d13472FD786B03afC9C52aD5FCf023;
+    address public constant globalFarm = 0xd91531bdE4A60EBeaAA4A04C32f29c9f19EC77d8; // GlobalStaking contract
     uint256 public constant TIME_RESOLUTION = 1 hours;  // rewards calculates per each TIME_RESOLUTION
     uint256 public constant BONUS_LIMIT = 10;   // maximum bonus percentage can be bought
     address public bonusToken;  // token address 
