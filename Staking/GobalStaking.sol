@@ -138,7 +138,7 @@ interface ISimplifiedGlobalFarm {
     function farmExists(address _farmAddress) external view returns (bool);
 }
 
-contract GlobalFarm is Ownable {
+contract GlobalStaking is Ownable {
     
     struct LocalFarm {
         address farmAddress;
@@ -148,6 +148,9 @@ contract GlobalFarm is Ownable {
 
     address public constant globalFarm = 0x64Fa36ACD0d13472FD786B03afC9C52aD5FCf023;
     address public constant SOY_TOKEN = 0x9FaE2529863bD691B4A7171bDfCf33C7ebB10a65;
+    //TEST NET
+    //address public constant globalFarm = 0x9F66541abc036503Ae074E1E28638b0Cb6165458;
+    //address public constant SOY_TOKEN = 0x4c20231BCc5dB8D805DB9197C84c8BA8287CbA92;
 
     uint256 public totalMultipliers;
     uint256 public paymentDelay = 1 days;          // DEFAULTS_TO 1 days
@@ -156,8 +159,6 @@ contract GlobalFarm is Ownable {
     uint256                       public lastAddedFarmIndex = 0; // Farm IDs will start from 1
     
     mapping(address => uint256)   public localFarmId;     // locals farm address => id; localFarm at ID = 0 is considered non-existing
-    mapping(address => uint256)   public nextMint; // timestamp when token may be minted to local farm
-
 
     event AddStaking(address _localFarm, uint32 _multiplier);
     event RemoveStaking(address _localFarm);
@@ -171,7 +172,7 @@ contract GlobalFarm is Ownable {
     
     function rewardMintingAvailable(address _farm) public view returns (bool)
     {
-        return localFarms[localFarmId[_farm]].lastPayment + paymentDelay < next_payment();
+        return localFarms[localFarmId[_farm]].lastPayment + paymentDelay <= next_payment();
     }
 
     function getAllocationX1000(address _farm) public view returns (uint256)
@@ -266,5 +267,14 @@ contract GlobalFarm is Ownable {
             IERC223(SOY_TOKEN).transfer(_localFarmAddress, _reward);
             ILocalFarm(_localFarmAddress).notifyRewardAmount(_reward);
         }
+    }
+
+    function notifyRewardAmount(uint256 reward) external {}
+    function tokenReceived(
+        address _from,
+        uint256 _value,
+        bytes calldata _data
+    ) external {
+        require(_from == globalFarm, "Only globalFarm");
     }
 }
