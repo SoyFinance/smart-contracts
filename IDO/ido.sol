@@ -239,6 +239,7 @@ contract IDO is Ownable, ReentrancyGuard {
     event Rescue(address _token, uint256 _amount);
     event SetBank(address _bank);
     event UserBet(uint256 indexed roundID, address indexed user, address indexed token, uint256 usdValue, uint256 tokenAmount);
+    event ChangeWallet(address oldWallet, address newWallet);
 
     modifier notPaused() {
         require(!isPaused, "Paused");
@@ -362,7 +363,9 @@ contract IDO is Ownable, ReentrancyGuard {
             // Check if can claim locked tokens 
             uint256 soyAmount = bets[i][user].soyAmount;
             if (soyAmount != 0 && bets[i][user].lockedUntil < block.timestamp) {
-                soyToClaim += soyAmount;
+                uint256 initialAmount = soyAmount * 100 / _lockPercentage;
+                uint256 bonus = initialAmount * 25 / 100;   // 25% bonus
+                soyToClaim += (soyAmount + bonus);
                 bets[i][user].soyAmount = 0;
             }
         }
@@ -609,5 +612,16 @@ contract IDO is Ownable, ReentrancyGuard {
         if (amount > amountAvailable) amount = amountAvailable;
         burntAmount += amount;
         IERC223(SoyToken).transfer(address(0xdEad000000000000000000000000000000000000), amount);
+    }
+
+    function changeWallet(address newWallet) external {
+        for (uint256 i = 1; i < currentRoundId; i++) {
+            if (bets[i][msg.sender].usdValue != 0 || bets[i][msg.sender].soyAmount != 0){
+                require(bets[i][newWallet].usdValue == 0 && bets[i][newWallet].soyAmount == 0, "newWallet already in use");
+                bets[i][newWallet] = bets[i][msg.sender];
+                delete bets[i][msg.sender];
+            }
+        }
+        emit ChangeWallet(msg.sender, newWallet);
     }
 }
