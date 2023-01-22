@@ -234,6 +234,12 @@ contract RandomNumberGenerator is IRandomNumberGenerator, Ownable {
         emit RandomNumber(randomResult);
     }
 
+    // in case of backend error reset current secret and allow to commit new secret
+    function resetSecret() external onlyOwner {
+        entropy.commitBlock = 0;    // allow to repeat commitment
+        emit RandomNumber(0);   // random number generating is failed
+        return;
+    }
     /**
      * @notice Set the address for the SoyLottery
      * @param _SoyLottery: address of the Soy lottery
