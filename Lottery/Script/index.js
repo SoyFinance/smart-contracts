@@ -20,10 +20,10 @@ const BotToken = process.env.BOT_TOKEN; // telegram bot token
 //console.log(chatId); // check if is settings is loaded
 
 const lottery = {
-    priceTicketInSoy: "5000000000000000", //0.005
+    priceTicketInSoy: "25000000000000000000", //25 SOY
     discountDivisor: 2000,
-    rewardsBreakdown: [1500, 2500, 6000, 0, 0, 0], // 15% of rewards to 1 number, 25% - to 2 numbers, 60% - to 3 numbers
-    treasuryFee: 1000, // 10% of collected money go to treasury (or burn)
+    rewardsBreakdown: [1111, 2777, 6112, 0, 0, 0], // 11.11% of rewards to 1 number, 27.77% - to 2 numbers, 61.12% - to 3 numbers
+    treasuryFee: 1000, // 10% of collected money go to treasury (or burn), the rest go to rewards pool
     align : 7200, // 2 hours. Lottery end time aline to this value. I.e. if align = 86400 then end time will be next 00:00:00 UTC
     autoInjection: 1, // 1 - rewards that were not winned will be injected to next lottery round; 0 - unused money will go to treasury (or burn)
 }
