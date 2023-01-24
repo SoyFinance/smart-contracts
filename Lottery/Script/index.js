@@ -73,7 +73,7 @@ async function startLottery() {
     try 
     {
         console.log("start new lottery");
-        var endTime = (Math.trunc(currentTime / lottery.align) + 1) * lottery.align;
+        var endTime = (Math.trunc(currentTime / lottery.align)) * lottery.align;
         if (endTime - currentTime < 3600) endTime += lottery.align;
         var gas_limit = await SoyLottery.methods.startLottery(endTime, lottery.priceTicketInSoy, lottery.discountDivisor, lottery.rewardsBreakdown, lottery.treasuryFee).estimateGas({from: acc.address});
         var params = {from: acc.address, value: 0, gas: parseInt(gas_limit)+20000,};
