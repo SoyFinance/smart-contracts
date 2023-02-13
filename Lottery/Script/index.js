@@ -20,11 +20,12 @@ const BotToken = process.env.BOT_TOKEN; // telegram bot token
 //console.log(chatId); // check if is settings is loaded
 
 const lottery = {
-    priceTicketInSoy: "25000000000000000000", //25 SOY
+    priceTicketInSoy: "250000000000000000000", //250 SOY
     discountDivisor: 2000,
     rewardsBreakdown: [1111, 2777, 6112, 0, 0, 0], // 11.11% of rewards to 1 number, 27.77% - to 2 numbers, 61.12% - to 3 numbers
     treasuryFee: 1000, // 10% of collected money go to treasury (or burn), the rest go to rewards pool
-    align : 7200, // 2 hours. Lottery end time aline to this value. I.e. if align = 86400 then end time will be next 00:00:00 UTC
+    align : 86400, // 24 hours. Lottery end time align to this value. I.e. if align = 86400 then end time will be next 00:00:00 UTC
+    offset: 8*3600 + 55*60, // +8:50 hours to align time
     autoInjection: 1, // 1 - rewards that were not winned will be injected to next lottery round; 0 - unused money will go to treasury (or burn)
 }
 
@@ -73,7 +74,7 @@ async function startLottery() {
     try 
     {
         console.log("start new lottery");
-        var endTime = (Math.trunc(currentTime / lottery.align) + 1) * lottery.align;
+        var endTime = (Math.trunc(currentTime / lottery.align) + 1) * lottery.align + lottery.offset;
         if (endTime - currentTime < 3600) endTime += lottery.align;
         var gas_limit = await SoyLottery.methods.startLottery(endTime, lottery.priceTicketInSoy, lottery.discountDivisor, lottery.rewardsBreakdown, lottery.treasuryFee).estimateGas({from: acc.address});
         var params = {from: acc.address, value: 0, gas: parseInt(gas_limit)+20000,};
