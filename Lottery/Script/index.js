@@ -5,13 +5,13 @@ const TelegramBot = require('node-telegram-bot-api');
 const {RandomNumberGenerator_ABI, SoyLottery_ABI} = require('./abi.js');
 
 // Callisto test net
-const SoyLottery_addr = "0xefBf55Af146093738982Fe25e69fE966F26670de";
-const RandomNumberGenerator_addr = "0x09D8B4A17edd82CA0681409329A31DC04B74bae2";
-const provider = "https://testnet-rpc.callisto.network"; // CLO test net
+//const SoyLottery_addr = "0xefBf55Af146093738982Fe25e69fE966F26670de";
+//const RandomNumberGenerator_addr = "0x09D8B4A17edd82CA0681409329A31DC04B74bae2";
+//const provider = "https://testnet-rpc.callisto.network"; // CLO test net
 // Callisto Main net
-//const SoyLottery_addr = "";
-//const RandomNumberGenerator_addr = "";
-//const provider =  "https://rpc.callisto.network/"; // CLO main net
+const SoyLottery_addr = "0xF20e070F02f9Ca1eeD3a34D098F3dB15C0F36483";
+const RandomNumberGenerator_addr = "0x9BfA10ec7cBDfa029692c95E493f2fc1BdCb25af";
+const provider =  "https://rpc.callisto.network/"; // CLO main net
 
 
 const pk = process.env.SYSTEM_PK;  // Private key should be hidden
