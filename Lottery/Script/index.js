@@ -21,7 +21,7 @@ const BotToken = process.env.BOT_TOKEN; // telegram bot token
 
 const lottery = {
     priceTicketInSoy: "250000000000000000000", //250 SOY
-    discountDivisor: 2000,
+    discountDivisor: 480, // 5% discount when buy 25 tickets
     rewardsBreakdown: [1111, 2777, 6112, 0, 0, 0], // 11.11% of rewards to 1 number, 27.77% - to 2 numbers, 61.12% - to 3 numbers
     treasuryFee: 1000, // 10% of collected money go to treasury (or burn), the rest go to rewards pool
     align : 86400, // 24 hours. Lottery end time align to this value. I.e. if align = 86400 then end time will be next 00:00:00 UTC
