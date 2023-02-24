@@ -842,4 +842,11 @@ contract SoyFinanceRouter is ISoyFinanceRouter02 {
     {
         return SoyFinanceLibrary.getAmountsIn(factory, amountOut, path);
     }
+
+    // Rescue ERC20 tokens
+    function rescueERC20(address _token, uint256 _value) external {
+        require(msg.sender == ISoyFinanceFactory(factory).feeToSetter(), 'SoyFinance: FORBIDDEN');
+        // bytes4(keccak256(bytes('transfer(address,uint256)')));
+        _token.call(abi.encodeWithSelector(0xa9059cbb, msg.sender, _value));
+    }
 }

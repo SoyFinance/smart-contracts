@@ -154,9 +154,6 @@ contract  SoyFinanceERC223 is ISoyFinanceERC223 {
     bytes32 public constant PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
     mapping(address => uint) public nonces;
     
-    event Approval(address indexed owner, address indexed spender, uint value);
-    event Transfer(address indexed from, address indexed to, uint value);
-
     constructor() public {
         uint chainId;
         assembly {
@@ -484,6 +481,14 @@ contract SoyFinancePair is ISoyFinancePair, SoyFinanceERC223 {
     function tokenReceived(address /*_from*/, uint /*_value*/, bytes calldata /*_data*/) external view {
         require(msg.sender == token0 || msg.sender == token1, "Wrong token");
     }
+
+    // Rescue ERC20 tokens
+    function rescueERC20(address _token, uint256 _value) external {
+        require(_token != token0 && _token != token1, "Wrong token");
+        require(msg.sender == ISoyFinanceFactory(factory).feeToSetter(), 'SoyFinance: FORBIDDEN');
+        // bytes4(keccak256(bytes('transfer(address,uint256)')));
+        _token.call(abi.encodeWithSelector(0xa9059cbb, msg.sender, _value));
+    }
 }
 
 
@@ -495,8 +500,6 @@ contract SoyFinanceFactory is ISoyFinanceFactory {
 
     mapping(address => mapping(address => address)) public getPair;
     address[] public allPairs;
-
-    event PairCreated(address indexed token0, address indexed token1, address pair, uint);
 
     constructor(address _feeToSetter) public {
         feeToSetter = _feeToSetter;
@@ -531,5 +534,12 @@ contract SoyFinanceFactory is ISoyFinanceFactory {
     function setFeeToSetter(address _feeToSetter) external {
         require(msg.sender == feeToSetter, 'SoyFinance: FORBIDDEN');
         feeToSetter = _feeToSetter;
+    }
+
+    // Rescue ERC20 tokens
+    function rescueERC20(address _token, uint256 _value) external {
+        require(msg.sender == feeToSetter, 'SoyFinance: FORBIDDEN');
+        // bytes4(keccak256(bytes('transfer(address,uint256)')));
+        _token.call(abi.encodeWithSelector(0xa9059cbb, msg.sender, _value));
     }
 }
